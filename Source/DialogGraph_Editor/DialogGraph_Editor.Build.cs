@@ -38,6 +38,9 @@ public class DialogGraph_Editor : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+                "UnrealEd",
+                "AssetTools",
+                "DialogGraph"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
