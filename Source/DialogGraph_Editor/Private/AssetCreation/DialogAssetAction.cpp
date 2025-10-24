@@ -1,4 +1,4 @@
-#include <DialogAssetAction.h>
+#include <AssetCreation/DialogAssetAction.h>
 #include <DialogAsset.h>
 #include <DialogAssetEditor.h>
 
@@ -16,7 +16,7 @@ UClass* FDialogAssetAction::GetSupportedClass() const { return UDialogAsset::Sta
 void FDialogAssetAction::OpenAssetEditor(const TArray<UObject*>& inObjects, TSharedPtr<class IToolkitHost> editWithinLevelEditor) 
 {
     EToolkitMode::Type mode = editWithinLevelEditor.IsValid() ? EToolkitMode::WorldCentric : EToolkitMode::Standalone;
-    
+
     for(UObject* object : inObjects)
     {
         UDialogAsset* dialogAsset = Cast<UDialogAsset>(object);

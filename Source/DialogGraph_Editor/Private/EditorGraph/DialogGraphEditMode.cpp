@@ -1,6 +1,6 @@
-#include <DialogGraphEditMode.h>
+#include <EditorGraph/DialogGraphEditMode.h>
+#include <EditorGraph/DialogGraphTabFactory.h>
 #include <DialogAssetEditor.h>
-#include <DialogGraphTabFactory.h>
 
 FDialogGraphEditMode::FDialogGraphEditMode(TSharedPtr<FDialogAssetEditor> editor) : FApplicationMode(FName(TEXT("DialogGraphEditMode")))
 {

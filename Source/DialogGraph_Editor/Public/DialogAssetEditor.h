@@ -3,13 +3,19 @@
 #include <CoreMinimal.h>
 #include <WorkflowOrientedApp/WorkflowCentricApplication.h>
 
+class UDialogAsset;
+class UEdGraph;
+
 class FDialogAssetEditor : public FWorkflowCentricApplication
 {
 public:
     virtual void RegisterTabSpawners(const TSharedRef<FTabManager>& tabManager) override;
     void InitEditor(const EToolkitMode::Type mode, const TSharedPtr<IToolkitHost>& initToolkitHost, UObject* inObject);
 
-public:
+    UDialogAsset* GetWorkingAsset() { return _WorkingAsset; }
+    UEdGraph* GetWorkingGraph() { return _WorkingGraph; }
+
+public: // IToolkit interface
     virtual FName GetToolkitFName() const override { return FName(TEXT("DialogAssetEditor")); }
     virtual FText GetBaseToolkitName() const override { return FText::FromString("DialogAssetEditor"); }
     virtual FString GetWorldCentricTabPrefix() const override { return TEXT("Dialog Asset Editor"); }
@@ -18,4 +24,10 @@ public:
     virtual FString GetDocumentationLink() const override { return TEXT("https://github.com/Agustin-E-Garcia/DialogGraph"); }
     virtual void OnToolkitHostingStarted(const TSharedRef<IToolkit>& toolkit) override {};
     virtual void OnToolkitHostingFinished(const TSharedRef<IToolkit>& toolkit) override {};
+
+private:
+    UPROPERTY()
+    UDialogAsset* _WorkingAsset = nullptr;
+    UEdGraph* _WorkingGraph = nullptr;
+
 };

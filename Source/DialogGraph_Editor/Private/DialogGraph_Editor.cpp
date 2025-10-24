@@ -1,8 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "DialogGraph_Editor.h"
-#include "Templates/SharedPointer.h"
-#include <DialogAssetAction.h>
+#include <DialogGraph_Editor.h>
+#include <AssetCreation/DialogAssetAction.h>
 #include <IAssetTools.h>
 #include <AssetToolsModule.h>
 
