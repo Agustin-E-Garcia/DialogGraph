@@ -43,6 +43,7 @@ public class DialogGraph_Editor : ModuleRules
                 "GraphEditor",
                 "DialogGraph",
                 "ToolMenus",
+                "EditorScriptingUtilities",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

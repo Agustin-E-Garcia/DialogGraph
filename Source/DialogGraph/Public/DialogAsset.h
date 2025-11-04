@@ -11,13 +11,22 @@ class DIALOGGRAPH_API UDialogAsset : public UDataAsset
     GENERATED_BODY()
 
 public:
-    bool CreateNewNode();
+    FDialogNode* CreateNewNode(NodeType nodeType);
+    FDialogNode* GetNode(int ID);
     bool DeleteNode(int ID);
+
+    FDialogNode* GetOrAddNode(int ID, NodeType nodeType);
+    bool IsEmpty() { return DialogNodes.IsEmpty(); }
+
+    int GetStartNodeID() { return StartNode; }
+
+private:
+    UPROPERTY(VisibleAnywhere)
+    int _NextNodeID = 0;
 
     UPROPERTY(VisibleAnywhere)
     TMap<int, FDialogNode> DialogNodes;
 
-private:
     UPROPERTY(VisibleAnywhere)
-    int _NextNodeID = -1;
+    int StartNode = -1;
 };
