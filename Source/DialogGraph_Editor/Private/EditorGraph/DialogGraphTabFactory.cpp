@@ -14,6 +14,11 @@ TSharedRef<SWidget> FDialogGraphTabFactory::CreateTabBody(const FWorkflowTabSpaw
 {
     TSharedPtr<FDialogAssetEditor> editor = _DialogAssetEditor.Pin();
 
+    SGraphEditor::FGraphEditorEvents graphEvents;
+    {
+        //graphEvents.OnSelectionChanged
+    }
+
     return SNew(SVerticalBox) + SVerticalBox::Slot()
                                 .FillHeight(1.0f)
                                 .HAlign(HAlign_Fill)
@@ -21,6 +26,7 @@ TSharedRef<SWidget> FDialogGraphTabFactory::CreateTabBody(const FWorkflowTabSpaw
                                     SNew(SGraphEditor)
                                             .IsEditable(true)
                                             .GraphToEdit(editor->GetWorkingGraph())
+                                            .GraphEvents(graphEvents)
                                 ];
 }
 

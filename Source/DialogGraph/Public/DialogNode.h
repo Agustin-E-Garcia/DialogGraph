@@ -36,16 +36,16 @@ struct FDialogNode
     FDialogNode() {}
     FDialogNode(NodeType type, int id) : ID(id), NodeType(type) {}
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     int ID;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     TEnumAsByte<NodeType> NodeType;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     FString DialogText;
 
-    UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     TArray<int> NextIDs;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)

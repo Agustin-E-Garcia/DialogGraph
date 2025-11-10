@@ -1,4 +1,5 @@
-#include <EditorGraph/DialogAssetInspectorTabFactory.h>
+#include "Templates/SharedPointer.h"
+#include <EditorGraph/DialogNodeInspectorTabFactory.h>
 #include <DialogAssetEditor.h>
 #include <Kismet2/BlueprintEditorUtils.h>
 #include <Kismet2/KismetEditorUtilities.h>
@@ -6,14 +7,15 @@
 #include <PropertyEditorModule.h>
 #include <IStructureDetailsView.h>
 #include <DialogAsset.h>
+#include <UObject/StructOnScope.h>
 
-FDialogAssetInspectorTabFactory::FDialogAssetInspectorTabFactory(TSharedPtr<FDialogAssetEditor> editor) : FWorkflowTabFactory(FName("DialogAssetInspectorTab"), editor)
+FDialogNodeInspectorTabFactory::FDialogNodeInspectorTabFactory(TSharedPtr<FDialogAssetEditor> editor) : FWorkflowTabFactory(FName("DialogNodeInspectorTab"), editor)
 {
     _DialogAssetEditor = editor;
     TabLabel = FText::FromString("Inspector");
 }
 
-TSharedRef<SWidget> FDialogAssetInspectorTabFactory::CreateTabBody(const FWorkflowTabSpawnInfo& info) const
+TSharedRef<SWidget> FDialogNodeInspectorTabFactory::CreateTabBody(const FWorkflowTabSpawnInfo& info) const
 {
     TSharedPtr<FDialogAssetEditor> editor = _DialogAssetEditor.Pin();
     FPropertyEditorModule& propertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>(TEXT("PropertyEditor"));
@@ -31,19 +33,28 @@ TSharedRef<SWidget> FDialogAssetInspectorTabFactory::CreateTabBody(const FWorkfl
         detailsViewArgs.bShowScrollBar = false;
     }
 
-    TSharedPtr<IDetailsView> detailsView = propertyEditorModule.CreateDetailView(detailsViewArgs);
-    detailsView->SetObject(Cast<UObject>(editor->GetWorkingAsset()));
+    FStructureDetailsViewArgs structureDetailsViewArgs;
+    {
+        structureDetailsViewArgs.bShowAssets = false;
+        structureDetailsViewArgs.bShowClasses = false;
+        structureDetailsViewArgs.bShowInterfaces = false;
+        structureDetailsViewArgs.bShowObjects = false;
+    }
+
+    TSharedPtr<FStructOnScope> scopeStruct = MakeShareable(new FStructOnScope(FDialogNode::StaticStruct(), reinterpret_cast<uint8*>(editor->GetWorkingAsset()->GetNode(0))));
+    TSharedPtr<IStructureDetailsView> detailsView = propertyEditorModule.CreateStructureDetailView(detailsViewArgs, structureDetailsViewArgs, scopeStruct);
 
     return SNew(SVerticalBox)
                 + SVerticalBox::Slot()
                 .FillHeight(1.0f)
                 .HAlign(HAlign_Fill)
                 [
-                    detailsView.ToSharedRef()
+                    detailsView->GetWidget().ToSharedRef()
                 ];
+
 }
 
-FText FDialogAssetInspectorTabFactory::GetTabToolTipText(const FWorkflowTabSpawnInfo& info) const
+FText FDialogNodeInspectorTabFactory::GetTabToolTipText(const FWorkflowTabSpawnInfo& info) const
 {
     return FText::FromString(TEXT("Inspector to visualize dialog asset data"));
 }

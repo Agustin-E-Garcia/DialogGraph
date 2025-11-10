@@ -1,4 +1,3 @@
-#include "DialogNode.h"
 #include <DialogAsset.h>
 
 FDialogNode* UDialogAsset::CreateNewNode(NodeType nodeType)
