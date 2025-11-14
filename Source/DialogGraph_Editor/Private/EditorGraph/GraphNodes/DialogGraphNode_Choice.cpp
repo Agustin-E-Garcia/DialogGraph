@@ -4,14 +4,7 @@
 
 void UDialogGraphNode_Choice::AddMenuActions(FToolMenuSection* section) const
 {
-    section->AddMenuEntry
-    (
-        TEXT("DeleteEntry"),
-        FText::FromString(TEXT("Delete Node")),
-        FText::FromString(TEXT("Deletes the node")),
-        FSlateIcon(TEXT("CustomAssetEditorStyle"), TEXT("CustomAssetEditor.NodeDeleteNodeIcon")),
-        FUIAction(FExecuteAction::CreateUObject(const_cast<UDialogGraphNode_Choice*>(this), &UDialogGraphNode_Choice::DeleteNode))
-    );
+    UDialogGraphNode_Base::AddMenuActions(section);
 
     section->AddMenuEntry
         (
@@ -30,7 +23,6 @@ void UDialogGraphNode_Choice::AddMenuActions(FToolMenuSection* section) const
             FSlateIcon(TEXT("CustomAssetEditorStyle"), TEXT("CustomAssetEditor.NodeDeletePinIcon")),
             FUIAction(FExecuteAction::CreateUObject(const_cast<UDialogGraphNode_Choice*>(this), &UDialogGraphNode_Choice::RemovePinAction))
         );
-
 }
 
 void UDialogGraphNode_Choice::AddPinAction()
@@ -52,11 +44,11 @@ void UDialogGraphNode_Choice::RemovePinAction()
 
 UEdGraphPin* UDialogGraphNode_Choice::SetupNodePins(UEdGraphPin* fromPin, int outputCount)
 {
-    UEdGraphPin* inputPin = CreatePin(EEdGraphPinDirection::EGPD_Input, TEXT("Input"), TEXT("prev"));
+    UEdGraphPin* inputPin = CreateCustomPin(EEdGraphPinDirection::EGPD_Input, TEXT("prev"));
 
     for (int i = 0; i < outputCount; i++)
     {
-        CreatePin(EEdGraphPinDirection::EGPD_Output, TEXT("Output"), *FString::FromInt(i));
+        CreateCustomPin(EEdGraphPinDirection::EGPD_Output, *FString::FromInt(i));
     }
 
     return inputPin;

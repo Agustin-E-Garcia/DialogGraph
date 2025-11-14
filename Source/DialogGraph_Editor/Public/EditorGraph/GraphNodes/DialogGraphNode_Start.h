@@ -16,4 +16,5 @@ public:
     virtual bool CanUserDeleteNode() const override { return false; }
 protected:
     virtual UEdGraphPin* SetupNodePins(UEdGraphPin* fromPin, int outputCount = 1) override;
+    virtual void AddMenuActions(FToolMenuSection* section) const override {}
 };

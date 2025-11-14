@@ -18,7 +18,11 @@ void UDialogGraphNode_Base::SetupNode(UEdGraphPin* fromPin, const FEditorData* n
 
     if(fromPin != nullptr && inputPin != nullptr)
     {
-        if(bLoading) fromPin->LinkedTo.Add(inputPin);
+        if(bLoading)
+        {
+            inputPin->LinkedTo.Add(fromPin);
+            fromPin->LinkedTo.Add(inputPin);
+        }
         else GetSchema()->TryCreateConnection(fromPin, inputPin);
     }
 }
@@ -29,6 +33,23 @@ void UDialogGraphNode_Base::GetNodeContextMenuActions(UToolMenu* menu, UGraphNod
     AddMenuActions(&section);
 }
 
+
+void UDialogGraphNode_Base::AutowireNewNode(UEdGraphPin* fromPin)
+{
+}
+
+void UDialogGraphNode_Base::AddMenuActions(FToolMenuSection* section) const
+{
+    section->AddMenuEntry
+    (
+        TEXT("DeleteEntry"),
+        FText::FromString(TEXT("Delete Node")),
+        FText::FromString(TEXT("Deletes the node")),
+        FSlateIcon(TEXT("CustomAssetEditorStyle"), TEXT("CustomAssetEditor.NodeDeleteNodeIcon")),
+        FUIAction(FExecuteAction::CreateUObject(const_cast<UDialogGraphNode_Base*>(this), &UDialogGraphNode_Base::DeleteNode))
+    );
+}
+
 void UDialogGraphNode_Base::DeleteNode()
 {
     GetGraph()->RemoveNode(this);
@@ -37,6 +58,10 @@ void UDialogGraphNode_Base::DeleteNode()
 UEdGraphPin* UDialogGraphNode_Base::CreateCustomPin(EEdGraphPinDirection direction, FName name) 
 {
     FName category = (direction == EEdGraphPinDirection::EGPD_Input) ? TEXT("Prev") : TEXT("Next");
+    FName subcategory = TEXT("DialogPin");
+
     UEdGraphPin* pin = CreatePin(direction, category, name);
+    pin->PinType.PinSubCategory = subcategory;
+
     return pin;
 }

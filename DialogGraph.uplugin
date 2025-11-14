@@ -18,12 +18,12 @@
 		{
 			"Name": "DialogGraph",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "PostEngineInit"
 		},
         {
             "Name": "DialogGraph_Editor",
             "Type": "Editor",
-            "LoadingPhase": "Default"
+            "LoadingPhase": "PostEngineInit"
         }
 	]
 }

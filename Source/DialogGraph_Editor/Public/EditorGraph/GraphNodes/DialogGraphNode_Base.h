@@ -27,7 +27,8 @@ public:
     int runtimeNodeID = -1;
 
 protected:
-    virtual void AddMenuActions(FToolMenuSection* section) const {}
+    virtual void AddMenuActions(FToolMenuSection* section) const;
+    virtual void AutowireNewNode(UEdGraphPin* fromPin) override;
     virtual UEdGraphPin* SetupNodePins(UEdGraphPin* fromPin, int outputCount = 1) { return nullptr; }
 
     void DeleteNode();

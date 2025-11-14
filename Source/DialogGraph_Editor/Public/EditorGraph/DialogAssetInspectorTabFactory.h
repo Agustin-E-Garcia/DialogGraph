@@ -3,10 +3,10 @@
 #include <CoreMinimal.h>
 #include <WorkflowOrientedApp/WorkflowTabFactory.h>
 
-class FDialogNodeInspectorTabFactory : public FWorkflowTabFactory
+class FDialogAssetInspectorTabFactory : public FWorkflowTabFactory
 {
 public:
-    FDialogNodeInspectorTabFactory(TSharedPtr<class FDialogAssetEditor> editor);
+    FDialogAssetInspectorTabFactory(TSharedPtr<class FDialogAssetEditor> editor);
 
     virtual TSharedRef<SWidget> CreateTabBody(const FWorkflowTabSpawnInfo& info) const override;
     virtual FText GetTabToolTipText(const FWorkflowTabSpawnInfo& info) const override;

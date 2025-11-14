@@ -1,3 +1,4 @@
+#include "EdGraph/EdGraph.h"
 #include <DialogAssetEditor.h>
 #include <EditorGraph/DialogGraphEditMode.h>
 #include <EditorGraph/DialogGraphSchema.h>
@@ -122,6 +123,7 @@ void FDialogAssetEditor::CreateGraphNode(int runtimeNodeID, UEdGraphPin* fromPin
             break;
         case NodeType::Line:
             graphNode = NewObject<UDialogGraphNode_Line>(_WorkingGraph);
+            Cast<UDialogGraphNode_Line>(graphNode)->SetDialogLine(FText::FromString(runtimeNode->DialogText));
             break;
         case NodeType::Choice:
             graphNode = NewObject<UDialogGraphNode_Choice>(_WorkingGraph);
@@ -151,6 +153,11 @@ int FDialogAssetEditor::CreateRuntimeNode(UDialogGraphNode_Base* graphNode)
 
     FDialogNode* runtimeNode = _WorkingAsset->GetOrAddNode(graphNode->runtimeNodeID, nodeType);
     graphNode->runtimeNodeID = runtimeNode->ID;
+
+    if(nodeType == NodeType::Line)
+    {
+        runtimeNode->DialogText = Cast<UDialogGraphNode_Line>(graphNode)->GetDialogLine().ToString();
+    }
 
     runtimeNode->editorData = FEditorData
         (

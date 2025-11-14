@@ -1,10 +1,11 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-
 #include <DialogGraph_Editor.h>
 #include <AssetCreation/DialogAssetAction.h>
 #include <IAssetTools.h>
 #include <AssetToolsModule.h>
-#include <DialogNode.h>
+#include <Styling/SlateStyleRegistry.h>
+#include <Interfaces/IPluginManager.h>
+#include <EditorGraph/DialogGraphStyle/DialogStyleSet.h>
 
 #define LOCTEXT_NAMESPACE "FDialogGraph_EditorModule"
 
@@ -15,12 +16,17 @@ void FDialogGraph_EditorModule::StartupModule()
     EAssetTypeCategories::Type assetType = assetToolsModule.RegisterAdvancedAssetCategory(FName(TEXT("Custom Assets")), FText::FromString("Dialog Asset"));
     TSharedPtr<FDialogAssetAction> dialogAssetAction = MakeShareable(new FDialogAssetAction(assetType));
     assetToolsModule.RegisterAssetTypeActions(dialogAssetAction.ToSharedRef());
+
+    _styleSet = MakeShared<DialogStyleSet>();
+    FSlateStyleRegistry::RegisterSlateStyle(*_styleSet->GetStyleSet());
 }
 
 void FDialogGraph_EditorModule::ShutdownModule()
 {
     // This function may be called during shutdown to clean up your module.  For modules that support dynamic reloading,
     // we call this function before unloading the module.
+    FSlateStyleRegistry::UnRegisterSlateStyle(*_styleSet->GetStyleSet());
+    _styleSet = nullptr;
 }
 
 #undef LOCTEXT_NAMESPACE

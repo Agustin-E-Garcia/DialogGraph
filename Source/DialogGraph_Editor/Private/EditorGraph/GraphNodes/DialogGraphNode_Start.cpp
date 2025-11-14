@@ -2,6 +2,6 @@
 
 UEdGraphPin* UDialogGraphNode_Start::SetupNodePins(UEdGraphPin* fromPin, int outputCount)
 {
-    CreatePin(EEdGraphPinDirection::EGPD_Output, TEXT("Output"), TEXT("next"));
+    CreateCustomPin(EEdGraphPinDirection::EGPD_Output, TEXT("next"));
     return nullptr;
 }
