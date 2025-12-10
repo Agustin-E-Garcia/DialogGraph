@@ -4,7 +4,7 @@
 #include <EdGraph/EdGraphPin.h>
 #include <DialogNode.h>
 
-void UDialogGraphNode_Base::SetupNode(UEdGraphPin* fromPin, const FEditorData* nodeData, bool bLoading)
+void UDialogGraphNode_Base::SetupNode(UEdGraphPin* fromPin, const FEditorData* nodeData)
 {
     CreateNewGuid();
 
@@ -16,26 +16,13 @@ void UDialogGraphNode_Base::SetupNode(UEdGraphPin* fromPin, const FEditorData* n
 
     UEdGraphPin* inputPin = SetupNodePins(fromPin, nodeData->OutputPinCount);
 
-    if(fromPin != nullptr && inputPin != nullptr)
-    {
-        if(bLoading)
-        {
-            inputPin->LinkedTo.Add(fromPin);
-            fromPin->LinkedTo.Add(inputPin);
-        }
-        else GetSchema()->TryCreateConnection(fromPin, inputPin);
-    }
+    if(fromPin != nullptr && inputPin != nullptr) GetSchema()->TryCreateConnection(fromPin, inputPin);
 }
 
 void UDialogGraphNode_Base::GetNodeContextMenuActions(UToolMenu* menu, UGraphNodeContextMenuContext* context) const
 {
     FToolMenuSection& section = menu->AddSection(TEXT("Dialog node section"), FText::FromString(TEXT("Dialog node actions")));
     AddMenuActions(&section);
-}
-
-
-void UDialogGraphNode_Base::AutowireNewNode(UEdGraphPin* fromPin)
-{
 }
 
 void UDialogGraphNode_Base::AddMenuActions(FToolMenuSection* section) const

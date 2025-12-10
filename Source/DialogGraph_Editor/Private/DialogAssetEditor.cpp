@@ -1,4 +1,3 @@
-#include "EdGraph/EdGraph.h"
 #include <DialogAssetEditor.h>
 #include <EditorGraph/DialogGraphEditMode.h>
 #include <EditorGraph/DialogGraphSchema.h>
@@ -130,7 +129,7 @@ void FDialogAssetEditor::CreateGraphNode(int runtimeNodeID, UEdGraphPin* fromPin
             break;
     }
 
-    graphNode->SetupNode(fromPin, &runtimeNode->editorData, true);
+    graphNode->SetupNode(fromPin, &runtimeNode->editorData);
     graphNode->runtimeNodeID = runtimeNodeID;
 
     _WorkingGraph->AddNode(graphNode, true, true);

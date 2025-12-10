@@ -11,6 +11,16 @@ class UDialogGraphSchema : public UEdGraphSchema
 public:
     virtual void GetGraphContextActions(FGraphContextMenuBuilder& contextMenuBuilder) const override;
     virtual const FPinConnectionResponse CanCreateConnection(const UEdGraphPin* a, const UEdGraphPin* b) const override;
+    virtual void BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotifcation) const override;
+    virtual bool TryCreateConnection(UEdGraphPin* a, UEdGraphPin* b) const override;
+    virtual bool CreateAutomaticConversionNodeAndConnections(UEdGraphPin* PinA, UEdGraphPin* PinB) const override;
+    virtual FConnectionDrawingPolicy* CreateConnectionDrawingPolicy(
+            int32 InBackLayerID, int32 InFrontLayerID, float InZoomFactor,
+            const FSlateRect& InClippingRect, FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const override;
+
+protected:
+    bool CreateConnectionWithTransition(UEdGraphPin* a, UEdGraphPin* b) const;
+    void BreakConnectionWithTransition(UEdGraphPin* target) const;
 };
 
 USTRUCT()

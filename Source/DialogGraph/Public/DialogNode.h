@@ -3,6 +3,7 @@
 #include <CoreMinimal.h>
 #include <DialogNode.generated.h>
 
+#if WITH_EDITORONLY_DATA
 USTRUCT(BlueprintType)
 struct FEditorData
 {
@@ -18,6 +19,7 @@ struct FEditorData
     UPROPERTY(VisibleAnywhere)
     FString Comment = "";
 };
+#endif
 
 UENUM()
 enum NodeType
@@ -29,7 +31,7 @@ enum NodeType
 };
 
 USTRUCT(BlueprintType)
-struct FDialogNode
+struct GRAPHEDITOR_API FDialogNode
 {
     GENERATED_BODY()
 
@@ -48,6 +50,8 @@ struct FDialogNode
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     TArray<int> NextIDs;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+#if WITH_EDITORONLY_DATA
+    UPROPERTY(VisibleAnywhere)
     FEditorData editorData;
+#endif
 };

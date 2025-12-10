@@ -17,7 +17,7 @@ class UDialogGraphNode_Base : public UEdGraphNode
 public:
     UDialogGraphNode_Base() : UEdGraphNode() {}
 
-    void SetupNode(UEdGraphPin* fromPin, const FEditorData* nodeData, bool bLoading = false);
+    void SetupNode(UEdGraphPin* fromPin, const FEditorData* nodeData);
     virtual void GetNodeContextMenuActions(UToolMenu* menu, UGraphNodeContextMenuContext* context) const override;
     virtual UEdGraphPin* CreateCustomPin(EEdGraphPinDirection direction, FName name);
 
@@ -28,7 +28,6 @@ public:
 
 protected:
     virtual void AddMenuActions(FToolMenuSection* section) const;
-    virtual void AutowireNewNode(UEdGraphPin* fromPin) override;
     virtual UEdGraphPin* SetupNodePins(UEdGraphPin* fromPin, int outputCount = 1) { return nullptr; }
 
     void DeleteNode();
