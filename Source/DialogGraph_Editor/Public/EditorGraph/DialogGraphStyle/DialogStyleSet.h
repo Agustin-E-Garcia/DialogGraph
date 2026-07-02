@@ -1,7 +1,6 @@
 #pragma once
 
 #include <Styling/SlateStyle.h>
-#include <EditorGraph/DialogGraphStyle/DialogTransitionNodeStyle.h>
 
 struct FDialogPinFactory;
 struct FDialogLineNodeFactory;
@@ -17,6 +16,5 @@ public:
 private:
     TSharedPtr<FSlateStyleSet> _StyleSet;
     TSharedPtr<FDialogPinFactory> _PinFactory;
-    TSharedPtr<FDialogLineNodeFactory> _NodeLineFactory;
-    TSharedPtr<FDialogTransitionNodeFactory> _NodeTransitionFactory;
+    TSharedPtr<FDialogLineNodeFactory> _NodeFactory;
 };

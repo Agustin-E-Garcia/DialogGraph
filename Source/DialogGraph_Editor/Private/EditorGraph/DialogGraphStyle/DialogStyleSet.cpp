@@ -3,7 +3,6 @@
 #include <EditorGraph/DialogGraphStyle/DialogPinStyle.h>
 #include <EditorGraph/DialogGraphStyle/DialogLineNodeStyle.h>
 #include <EdGraphUtilities.h>
-#include <EditorGraph/DialogGraphStyle/DialogTransitionNodeStyle.h>
 
 DialogStyleSet::DialogStyleSet()
 {
@@ -15,18 +14,14 @@ DialogStyleSet::DialogStyleSet()
     _PinFactory = MakeShareable(new FDialogPinFactory());
     FEdGraphUtilities::RegisterVisualPinFactory(_PinFactory);
 
-    _NodeLineFactory = MakeShareable(new FDialogLineNodeFactory());
-    FEdGraphUtilities::RegisterVisualNodeFactory(_NodeLineFactory);
-
-    _NodeTransitionFactory = MakeShareable(new FDialogTransitionNodeFactory());
-    FEdGraphUtilities::RegisterVisualNodeFactory(_NodeTransitionFactory);
+    _NodeFactory = MakeShareable(new FDialogLineNodeFactory());
+    FEdGraphUtilities::RegisterVisualNodeFactory(_NodeFactory);
 }
 
 DialogStyleSet::~DialogStyleSet()
 {
     FEdGraphUtilities::UnregisterVisualPinFactory(_PinFactory);
-    FEdGraphUtilities::UnregisterVisualNodeFactory(_NodeLineFactory);
+    FEdGraphUtilities::UnregisterVisualNodeFactory(_NodeFactory);
     _PinFactory = nullptr;
-    _NodeLineFactory = nullptr;
-    _NodeTransitionFactory = nullptr;
+    _NodeFactory = nullptr;
 }

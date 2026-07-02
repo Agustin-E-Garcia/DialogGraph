@@ -1,3 +1,4 @@
+#include "Widgets/DeclarativeSyntaxSupport.h"
 #include <EditorGraph/DialogGraphTabFactory.h>
 #include <DialogAssetEditor.h>
 #include <Kismet2/BlueprintEditorUtils.h>

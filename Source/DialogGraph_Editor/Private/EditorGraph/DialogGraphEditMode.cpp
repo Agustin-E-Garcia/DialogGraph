@@ -1,3 +1,5 @@
+#include "Framework/Docking/TabManager.h"
+#include "Templates/SharedPointer.h"
 #include <EditorGraph/DialogGraphEditMode.h>
 #include <EditorGraph/DialogGraphTabFactory.h>
 #include <EditorGraph/DialogAssetInspectorTabFactory.h>

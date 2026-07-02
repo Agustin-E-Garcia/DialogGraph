@@ -1,3 +1,4 @@
+#include "Templates/SharedPointer.h"
 #include <EditorGraph/DialogNodeInspectorTabFactory.h>
 #include <DialogAssetEditor.h>
 #include <Kismet2/BlueprintEditorUtils.h>
