@@ -4,7 +4,7 @@
 #include <EdGraph/EdGraphPin.h>
 #include <DialogNode.h>
 
-void UDialogGraphNode_Base::SetupNode(UEdGraphPin* fromPin, const FEditorData* nodeData, bool bLoading)
+void UDialogGraphNode_Base::SetupNode(const FEditorData* nodeData)
 {
     CreateNewGuid();
 
@@ -14,28 +14,18 @@ void UDialogGraphNode_Base::SetupNode(UEdGraphPin* fromPin, const FEditorData* n
     NodeComment = nodeData->Comment;
     bCommentBubbleVisible = nodeData->Comment != "" ? true : false;
 
-    UEdGraphPin* inputPin = SetupNodePins(fromPin, nodeData->OutputPinCount);
+    _InputPin = SetupNodePins();
+}
 
-    if(fromPin != nullptr && inputPin != nullptr)
-    {
-        if(bLoading)
-        {
-            inputPin->LinkedTo.Add(fromPin);
-            fromPin->LinkedTo.Add(inputPin);
-        }
-        else GetSchema()->TryCreateConnection(fromPin, inputPin);
-    }
+bool UDialogGraphNode_Base::TryConnectToNode(UEdGraphPin* fromPin, UDialogGraphNode_Base* toNode)
+{
+    return GetSchema()->TryCreateConnection(fromPin, toNode->GetInputPin());
 }
 
 void UDialogGraphNode_Base::GetNodeContextMenuActions(UToolMenu* menu, UGraphNodeContextMenuContext* context) const
 {
     FToolMenuSection& section = menu->AddSection(TEXT("Dialog node section"), FText::FromString(TEXT("Dialog node actions")));
     AddMenuActions(&section);
-}
-
-
-void UDialogGraphNode_Base::AutowireNewNode(UEdGraphPin* fromPin)
-{
 }
 
 void UDialogGraphNode_Base::AddMenuActions(FToolMenuSection* section) const
@@ -55,10 +45,10 @@ void UDialogGraphNode_Base::DeleteNode()
     GetGraph()->RemoveNode(this);
 }
 
-UEdGraphPin* UDialogGraphNode_Base::CreateCustomPin(EEdGraphPinDirection direction, FName name) 
+UEdGraphPin* UDialogGraphNode_Base::CreateCustomPin(EEdGraphPinDirection direction, FName name, FString subCategory)
 {
     FName category = (direction == EEdGraphPinDirection::EGPD_Input) ? TEXT("Prev") : TEXT("Next");
-    FName subcategory = TEXT("DialogPin");
+    FName subcategory = FName(subCategory);
 
     UEdGraphPin* pin = CreatePin(direction, category, name);
     pin->PinType.PinSubCategory = subcategory;

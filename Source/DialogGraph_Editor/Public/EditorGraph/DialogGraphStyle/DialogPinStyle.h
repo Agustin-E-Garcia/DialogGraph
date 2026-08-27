@@ -10,12 +10,14 @@ public:
 	SLATE_BEGIN_ARGS(SDialogGraphPin) {}
 	SLATE_END_ARGS()
 
-	void Construct(const FArguments& inArgs, UEdGraphPin* inGraphPinObj) {
+	void Construct(const FArguments& inArgs, UEdGraphPin* inGraphPinObj) 
+    {
 		SGraphPin::Construct(SGraphPin::FArguments(), inGraphPinObj);
 	}
 	
 protected:
-	virtual FSlateColor GetPinColor() const override {
+	virtual FSlateColor GetPinColor() const override 
+    {
 		return FSlateColor(FLinearColor(0.2f, 1.0f, 0.2f));
 	}
 };
@@ -23,8 +25,10 @@ protected:
 struct FDialogPinFactory : public FGraphPanelPinFactory {
 public:
 	virtual ~FDialogPinFactory() {}
-	virtual TSharedPtr<SGraphPin> CreatePin(UEdGraphPin* pin) const override {
-		if (FName(TEXT("DialogPin")) == pin->PinType.PinSubCategory) {
+	virtual TSharedPtr<SGraphPin> CreatePin(UEdGraphPin* pin) const override 
+    {
+		if (FName(TEXT("DialogPin")) == pin->PinType.PinSubCategory)
+        {
 			return SNew(SDialogGraphPin, pin);
 		}
 		return nullptr;

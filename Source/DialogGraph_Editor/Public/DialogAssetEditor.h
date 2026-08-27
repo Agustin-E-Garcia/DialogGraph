@@ -33,16 +33,11 @@ public: // IToolkit interface
     virtual void OnToolkitHostingFinished(const TSharedRef<IToolkit>& toolkit) override {};
 
     virtual void OnClose() override;
-    void OnGraphChanged(const FEdGraphEditAction& editAction);
 
 private:
     UPROPERTY()
     UDialogAsset* _WorkingAsset = nullptr;
     UEdGraph* _WorkingGraph = nullptr;
-
-    FDelegateHandle _OnGraphChangedHandle;
-
-    TSet<int> _RemovedNodes;
 
     void FillToolbar(FToolBarBuilder& Builder);
     void CreateGraphNode(int runtimeNodeID, UEdGraphPin* fromPin);

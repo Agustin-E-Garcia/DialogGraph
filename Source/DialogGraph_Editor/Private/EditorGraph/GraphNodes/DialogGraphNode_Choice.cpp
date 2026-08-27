@@ -1,5 +1,6 @@
 #include <EditorGraph/GraphNodes/DialogGraphNode_Choice.h>
 #include <EdGraph/EdGraph.h>
+#include <EdGraph/EdGraphPin.h>
 #include <ToolMenuSection.h>
 
 void UDialogGraphNode_Choice::AddMenuActions(FToolMenuSection* section) const
@@ -27,7 +28,8 @@ void UDialogGraphNode_Choice::AddMenuActions(FToolMenuSection* section) const
 
 void UDialogGraphNode_Choice::AddPinAction()
 {
-    CreateCustomPin(EEdGraphPinDirection::EGPD_Output, *FString::FromInt(GetOutputPinCount()));
+    _PinInfo.AddDefaulted();
+    CreateCustomPin(EEdGraphPinDirection::EGPD_Output, "", "ChoicePin");
     GetGraph()->NotifyGraphChanged();
     GetGraph()->Modify();
 }
@@ -42,14 +44,34 @@ void UDialogGraphNode_Choice::RemovePinAction()
     GetGraph()->Modify();
 }
 
-UEdGraphPin* UDialogGraphNode_Choice::SetupNodePins(UEdGraphPin* fromPin, int outputCount)
+UEdGraphPin* UDialogGraphNode_Choice::SetupNodePins()
 {
     UEdGraphPin* inputPin = CreateCustomPin(EEdGraphPinDirection::EGPD_Input, TEXT("prev"));
 
-    for (int i = 0; i < outputCount; i++)
+    if(_PinInfo.IsEmpty())
     {
-        CreateCustomPin(EEdGraphPinDirection::EGPD_Output, *FString::FromInt(i));
+        CreateCustomPin(EEdGraphPinDirection::EGPD_Output, "", "ChoicePin");
+        _PinInfo.AddDefaulted();
+        return inputPin;
+    }
+
+    for (int i = 0; i < _PinInfo.Num(); i++)
+    {
+        CreateCustomPin(EEdGraphPinDirection::EGPD_Output, *_PinInfo[i].Title, "ChoicePin");
     }
 
     return inputPin;
+}
+
+void UDialogGraphNode_Choice::SetPinOption(FGuid pinGuid, FString optionTitle)
+{
+    int outputIndex = -1;
+    for(int i = 0; i < GetAllPins().Num(); i++)
+    {
+        if(GetAllPins()[i]->Direction == EEdGraphPinDirection::EGPD_Input) continue;
+        outputIndex++;
+
+        if(GetAllPins()[i]->PinId != pinGuid) continue;
+        _PinInfo[outputIndex].Title = optionTitle;
+    }
 }

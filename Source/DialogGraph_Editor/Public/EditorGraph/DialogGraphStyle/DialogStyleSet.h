@@ -3,6 +3,7 @@
 #include <Styling/SlateStyle.h>
 
 struct FDialogPinFactory;
+struct FChoicePinFactory;
 struct FDialogLineNodeFactory;
 
 class DialogStyleSet
@@ -16,5 +17,6 @@ public:
 private:
     TSharedPtr<FSlateStyleSet> _StyleSet;
     TSharedPtr<FDialogPinFactory> _PinFactory;
-    TSharedPtr<FDialogLineNodeFactory> _NodeFactory;
+    TSharedPtr<FChoicePinFactory> _ChoicePinFactory;
+    TSharedPtr<FDialogLineNodeFactory> _LineNodeFactory;
 };

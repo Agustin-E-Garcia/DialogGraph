@@ -14,11 +14,11 @@ public:
     virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override { return FText::FromString(TEXT("Dialog Line")); }
     virtual FLinearColor GetNodeTitleColor() const override { return FLinearColor(FColor::Blue); }
 
-    void SetDialogLine(FText inText) { _DialogLine = inText; }
-    FText GetDialogLine() { return _DialogLine; }
+    virtual NodeType GetNodeType() const override { return NodeType::Line; }
+
+    void SetDialogLine(FString inText);
+    FString GetDialogLine();
 
 protected:
-    virtual UEdGraphPin* SetupNodePins(UEdGraphPin* fromPin, int outputCount = 1) override;
-
-    FText _DialogLine;
+    virtual UEdGraphPin* SetupNodePins() override;
 };

@@ -1,33 +1,26 @@
 #include <DialogAsset.h>
 
-FDialogNode* UDialogAsset::CreateNewNode(NodeType nodeType)
+FDialogNode* UDialogAsset::CreateNewNode()
 {
-    FDialogNode* newNode = &DialogNodes.Emplace(_NextNodeID, FDialogNode(nodeType, _NextNodeID));
+    int id = DialogNodes.AddDefaulted();
+    FDialogNode* node = &DialogNodes[id];
+    node->ID = id;
 
-    if(nodeType == NodeType::Start && StartNode == -1) StartNode = _NextNodeID;
-
-    _NextNodeID++;
-    return newNode;
+    return node;
 }
 
-FDialogNode* UDialogAsset::GetNode(int ID)
+FDialogNode* UDialogAsset::GetNode(int Index)
 {
-    return DialogNodes.Find(ID);
+    if(Index < 0  || Index >= DialogNodes.Num()) return nullptr;
+
+    return &DialogNodes[Index];
 }
 
-bool UDialogAsset::DeleteNode(int ID)
-{
-    if(!DialogNodes.Contains(ID)) return false;
-    if(StartNode == ID) StartNode = -1;
-    DialogNodes.Remove(ID);
-    return true;
-}
-
-FDialogNode* UDialogAsset::GetOrAddNode(int ID, NodeType nodeType)
+FDialogNode* UDialogAsset::GetOrAddNode(int ID)
 {
     FDialogNode* node = GetNode(ID);
 
     if(node != nullptr) return node;
-    else return CreateNewNode(nodeType);
+    else return CreateNewNode();
 
 }

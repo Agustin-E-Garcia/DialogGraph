@@ -2,6 +2,8 @@
 
 #include <CoreMinimal.h>
 #include <EdGraph/EdGraph.h>
+#include <DialogNode.h>
+#include <EdGraph/EdGraphPin.h>
 #include <DialogGraphNode_Base.generated.h>
 
 class UToolMenu;
@@ -17,19 +19,28 @@ class UDialogGraphNode_Base : public UEdGraphNode
 public:
     UDialogGraphNode_Base() : UEdGraphNode() {}
 
-    void SetupNode(UEdGraphPin* fromPin, const FEditorData* nodeData, bool bLoading = false);
+    void SetupNode(const FEditorData* nodeData);
+    bool TryConnectToNode(UEdGraphPin* fromPin, UDialogGraphNode_Base* toNode);
+
     virtual void GetNodeContextMenuActions(UToolMenu* menu, UGraphNodeContextMenuContext* context) const override;
-    virtual UEdGraphPin* CreateCustomPin(EEdGraphPinDirection direction, FName name);
+    virtual UEdGraphPin* CreateCustomPin(EEdGraphPinDirection direction, FName name, FString subCategory = "DialogPin");
 
     virtual bool CanUserDeleteNode() const override { return true; }
-    int GetOutputPinCount() const { return GetAllPins().Num() - 1; }
 
-    int runtimeNodeID = -1;
+    int GetOutputPinCount() const { return GetAllPins().Num() - 1; }
+    virtual NodeType GetNodeType() const { return NodeType::DEFAULT; }
+
+    TArray<FPinInfo>& GetPinInfo() { return _PinInfo; }
+    void SetPinInfo(TArray<FPinInfo> info) { _PinInfo = info; }
+
+    UEdGraphPin* GetInputPin() { return _InputPin; }
 
 protected:
     virtual void AddMenuActions(FToolMenuSection* section) const;
-    virtual void AutowireNewNode(UEdGraphPin* fromPin) override;
-    virtual UEdGraphPin* SetupNodePins(UEdGraphPin* fromPin, int outputCount = 1) { return nullptr; }
+    virtual UEdGraphPin* SetupNodePins() { return nullptr; }
 
     void DeleteNode();
+
+    TArray<FPinInfo> _PinInfo;
+    UEdGraphPin* _InputPin;
 };

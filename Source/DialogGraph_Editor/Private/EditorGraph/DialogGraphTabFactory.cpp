@@ -1,4 +1,5 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
+#include "Widgets/SNullWidget.h"
 #include <EditorGraph/DialogGraphTabFactory.h>
 #include <DialogAssetEditor.h>
 #include <Kismet2/BlueprintEditorUtils.h>
@@ -14,6 +15,10 @@ FDialogGraphTabFactory::FDialogGraphTabFactory(TSharedPtr<FDialogAssetEditor> ed
 TSharedRef<SWidget> FDialogGraphTabFactory::CreateTabBody(const FWorkflowTabSpawnInfo& info) const
 {
     TSharedPtr<FDialogAssetEditor> editor = _DialogAssetEditor.Pin();
+    if (!editor.IsValid())
+    {
+        return SNullWidget::NullWidget;
+    }
 
     SGraphEditor::FGraphEditorEvents graphEvents;
     {

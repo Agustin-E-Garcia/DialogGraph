@@ -1,16 +1,20 @@
 #pragma once
 
+#include "GenericPlatform/GenericApplication.h"
+#include "SGraphPin.h"
+#include "Styling/AppStyle.h"
+#include "Styling/SlateColor.h"
 #include "Templates/Casts.h"
 #include "Types/SlateEnums.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
-#include "Widgets/Layout/SBox.h"
-#include "Widgets/SBoxPanel.h"
 #include <EdGraphUtilities.h>
 #include <KismetPins/SGraphPinColor.h>
 #include <EdGraph/EdGraphPin.h>
 #include <Widgets/Text/SMultiLineEditableText.h>
 #include <EditorGraph/GraphNodes/DialogGraphNode_Line.h>
 #include <GraphEditorSettings.h>
+
+#include "Widgets/Input/SMultiLineEditableTextBox.h"
 
 class SDialogLineNode : public SGraphNode
 {
@@ -63,11 +67,14 @@ public:
                     .MinDesiredWidth(18.0f)
                     .MaxDesiredHeight(200.0f)
                     [
-                        SNew(SMultiLineEditableText)
+                        SNew(SMultiLineEditableTextBox)
+                        .Style(FAppStyle::Get(), "Graph.EditableTextBox")
                         .Text(this, &SDialogLineNode::GetNodeLine)
-                        .OnTextCommitted(this, &SDialogLineNode::OnLineTextCommited)
                         .SelectAllTextWhenFocused(true)
+                        .OnTextCommitted(this, &SDialogLineNode::OnLineTextCommited)
+                        .ForegroundColor(FSlateColor::UseForeground())
                         .WrapTextAt(400.0f)
+                        .ModiferKeyForNewLine(EModifierKey::Shift)
                     ]
                 ]
             ];
@@ -76,18 +83,16 @@ public:
 private:
     void OnLineTextCommited(const FText& NewText, ETextCommit::Type CommitType) 
     {
-        Cast<UDialogGraphNode_Line>(GraphNode)->SetDialogLine(NewText);
+        Cast<UDialogGraphNode_Line>(GraphNode)->SetDialogLine(NewText.ToString());
     }
 
     FText GetNodeLine() const 
     {
-        FText result = Cast<UDialogGraphNode_Line>(GraphNode)->GetDialogLine();
+        FText result = FText::FromString(Cast<UDialogGraphNode_Line>(GraphNode)->GetDialogLine());
 
         if(result.IsEmpty()) result = FText::FromString(TEXT("Enter dialog line..."));
         return result;
     }
-
-    TSharedPtr<SMultiLineEditableText> _LineTextBox;
 };
 
 struct FDialogLineNodeFactory : public FGraphPanelNodeFactory

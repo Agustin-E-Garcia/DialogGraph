@@ -13,9 +13,13 @@ public:
     virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override { return FText::FromString(TEXT("Dialog Choice")); }
     virtual FLinearColor GetNodeTitleColor() const override { return FLinearColor(FColor::Yellow); }
 
+    virtual NodeType GetNodeType() const override { return NodeType::Choice; }
+
+    void SetPinOption(FGuid pinGuid, FString optionTitle);
+
 protected:
     virtual void AddMenuActions(FToolMenuSection* section) const override;
-    virtual UEdGraphPin* SetupNodePins(UEdGraphPin* fromPin, int outputCount = 1) override;
+    virtual UEdGraphPin* SetupNodePins() override;
 
 private:
     void AddPinAction();

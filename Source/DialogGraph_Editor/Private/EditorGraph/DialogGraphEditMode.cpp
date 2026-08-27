@@ -1,5 +1,6 @@
 #include "Framework/Docking/TabManager.h"
 #include "Templates/SharedPointer.h"
+#include "WorkflowOrientedApp/ApplicationMode.h"
 #include <EditorGraph/DialogGraphEditMode.h>
 #include <EditorGraph/DialogGraphTabFactory.h>
 #include <EditorGraph/DialogAssetInspectorTabFactory.h>
@@ -44,11 +45,11 @@ FDialogGraphEditMode::FDialogGraphEditMode(TSharedPtr<FDialogAssetEditor> editor
         );
 }
 
-void FDialogGraphEditMode::RegisterTabFactories(TSharedPtr<FTabManager> inTabManager) 
+void FDialogGraphEditMode::RegisterTabFactories(TSharedPtr<FTabManager> inTabManager)
 {
     TSharedPtr<FDialogAssetEditor> editor = _DialogAssetEditor.Pin();
     editor->PushTabFactories(_AllowedTabs);
-    FApplicationMode::RegisterTabFactories(inTabManager);
+    FApplicationMode::RegisterTabFactoriesWithAppAndManager(editor.Get(), inTabManager.ToSharedRef());
 }
 
 void FDialogGraphEditMode::PreDeactivateMode() { FApplicationMode::PreDeactivateMode(); }

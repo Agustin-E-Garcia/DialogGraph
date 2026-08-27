@@ -11,22 +11,14 @@ class DIALOGGRAPH_API UDialogAsset : public UDataAsset
     GENERATED_BODY()
 
 public:
-    FDialogNode* CreateNewNode(NodeType nodeType);
+    FDialogNode* CreateNewNode();
     FDialogNode* GetNode(int ID);
-    bool DeleteNode(int ID);
+    FDialogNode* GetOrAddNode(int ID);
 
-    FDialogNode* GetOrAddNode(int ID, NodeType nodeType);
+    int GetNodeCount() { return DialogNodes.Num(); }
     bool IsEmpty() { return DialogNodes.IsEmpty(); }
-
-    int GetStartNodeID() { return StartNode; }
+    void Clear() { DialogNodes.Empty(); }
 
 private:
-    UPROPERTY(VisibleAnywhere)
-    int _NextNodeID = 0;
-
-    UPROPERTY(VisibleAnywhere)
-    TMap<int, FDialogNode> DialogNodes;
-
-    UPROPERTY(VisibleAnywhere)
-    int StartNode = -1;
+    UPROPERTY(VisibleAnywhere) TArray<FDialogNode> DialogNodes;
 };

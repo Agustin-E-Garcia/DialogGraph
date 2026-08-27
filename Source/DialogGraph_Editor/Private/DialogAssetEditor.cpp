@@ -1,4 +1,7 @@
-#include "EdGraph/EdGraph.h"
+#include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphPin.h"
+#include "EditorGraph/GraphNodes/DialogGraphNode_Base.h"
+#include "UObject/UObjectGlobals.h"
 #include <DialogAssetEditor.h>
 #include <EditorGraph/DialogGraphEditMode.h>
 #include <EditorGraph/DialogGraphSchema.h>
@@ -37,8 +40,6 @@ void FDialogAssetEditor::InitEditor(const EToolkitMode::Type mode, const TShared
     AddApplicationMode(TEXT("DialogGraphEditMode"), MakeShareable(new FDialogGraphEditMode(SharedThis(this))));
     SetCurrentMode(TEXT("DialogGraphEditMode"));
 
-    _OnGraphChangedHandle = _WorkingGraph->AddOnGraphChangedHandler(FOnGraphChanged::FDelegate::CreateSP(this, &FDialogAssetEditor::OnGraphChanged));
-
     InitializeGraphFromAsset();
 }
 
@@ -56,125 +57,105 @@ void FDialogAssetEditor::FillToolbar(FToolBarBuilder& Builder)
 
 void FDialogAssetEditor::OnClose() 
 {
-    _WorkingGraph->RemoveOnGraphChangedHandler(_OnGraphChangedHandle);
-    UpdateAssetFromGraph();
-}
-
-void FDialogAssetEditor::OnGraphChanged(const FEdGraphEditAction& editAction)
-{
-    if(editAction.Action == EEdGraphActionType::GRAPHACTION_RemoveNode)
-    {
-        for(const UEdGraphNode* node : editAction.Nodes)
-        {
-            const UDialogGraphNode_Base* graphNode = Cast<UDialogGraphNode_Base>(node);
-            if(graphNode == nullptr) continue;
-
-            _RemovedNodes.Add(graphNode->runtimeNodeID);
-        }
-    }
+    //UpdateAssetFromGraph();
 }
 
 void FDialogAssetEditor::InitializeGraphFromAsset()
 {
-    if(_WorkingAsset->IsEmpty())
-    {
-        UDialogGraphNode_Start* startNode = NewObject<UDialogGraphNode_Start>(_WorkingGraph);
-        FEditorData editorData;
-        startNode->SetupNode(nullptr, &editorData);
+    UDialogGraphNode_Start* startNode = NewObject<UDialogGraphNode_Start>(_WorkingGraph);
+    FEditorData editorData;
+    startNode->SetupNode(&editorData);
+    _WorkingGraph->AddNode(startNode, true, true);
 
-        _WorkingGraph->AddNode(startNode, true, true);
-        return;
+    // TODO: if we're not empty, make a map of runtimenode -> graph node, then populate the nodes and link them
+    TMap<int, UDialogGraphNode_Base*> IndexToGraphNode;
+    for(int i = 0; i < _WorkingAsset->GetNodeCount(); i++)
+    {
+        FDialogNode* runtimeNode = _WorkingAsset->GetNode(i);
+        UDialogGraphNode_Base* graphNode = nullptr;
+
+        switch(runtimeNode->NodeType)
+        {
+            case NodeType::Line:
+                graphNode = NewObject<UDialogGraphNode_Line>(_WorkingGraph);
+                break;
+            case NodeType::Choice:
+                graphNode = NewObject<UDialogGraphNode_Choice>(_WorkingGraph);
+                break;
+        }
+
+        graphNode->SetPinInfo(runtimeNode->NextIDs);
+        graphNode->SetupNode(&runtimeNode->editorData);
+
+        IndexToGraphNode.Emplace(runtimeNode->ID, graphNode);
+        _WorkingGraph->AddNode(graphNode, true, true);
     }
 
-    CreateGraphNode(_WorkingAsset->GetStartNodeID(), nullptr);
+    startNode->TryConnectToNode(startNode->GetPinAt(0), IndexToGraphNode.FindRef(0)); // We connect the start node to the first node
+
+    for(int t = 0; t < _WorkingAsset->GetNodeCount(); t++)
+    {
+        FDialogNode* runtimeNode = _WorkingAsset->GetNode(t);
+        UDialogGraphNode_Base* graphNode = IndexToGraphNode.FindRef(runtimeNode->ID);
+
+        int outputPinIndex = -1;
+        for(int index = 0; index < graphNode->GetAllPins().Num(); index++)
+        {
+            UEdGraphPin* pin = graphNode->GetPinAt(index);
+            if(pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
+
+            UDialogGraphNode_Base* toNode = IndexToGraphNode.FindRef(graphNode->GetPinInfo()[++outputPinIndex].NextID);
+            if(pin != nullptr && toNode != nullptr) graphNode->TryConnectToNode(pin, toNode);
+        }
+    }
 }
 
 void FDialogAssetEditor::UpdateAssetFromGraph()
 {
-    TArray<UDialogGraphNode_Start*> nodes;
+    TArray<UDialogGraphNode_Base*> nodes;
     _WorkingGraph->GetNodesOfClass(nodes);
 
-    if(nodes[0] == nullptr) return;
+    if(nodes.IsEmpty()) return;
 
-    if(!_RemovedNodes.IsEmpty())
+    _WorkingAsset->Clear();
+
+    TMap<FGuid, int> GuidToIndex;
+    for(int i = 0; i < nodes.Num(); i++)
     {
-        for (int id : _RemovedNodes)
+        if(nodes[i]->GetNodeType() == NodeType::DEFAULT) continue;
+
+        FDialogNode* runtimeNode = _WorkingAsset->CreateNewNode();
+        GuidToIndex.Emplace(nodes[i]->NodeGuid, runtimeNode->ID);
+
+        runtimeNode->NodeType = nodes[i]->GetNodeType();
+        runtimeNode->editorData = FEditorData
+                (
+                    nodes[i]->GetPosition(),
+                    nodes[i]->NodeComment
+                );
+    }
+
+    for(int t = 0; t < nodes.Num(); t++)
+    {
+        if(nodes[t]->GetNodeType() == NodeType::DEFAULT) continue;
+
+        UDialogGraphNode_Base* graphNode = nodes[t];
+        FDialogNode* runtimeNode = _WorkingAsset->GetNode(GuidToIndex[graphNode->NodeGuid]);
+        runtimeNode->NextIDs.Reserve(graphNode->GetAllPins().Num() - 1);
+
+        int outputPinIndex = -1; //since we iterate over ALL the pins and we have no guarantees that the input pin will be the first one, we keep track of which output pin we're looking at, not incrementing when it's an input pin
+        for(int q = 0; q < graphNode->GetAllPins().Num(); q++)
         {
-            _WorkingAsset->DeleteNode(id);
+            const UEdGraphPin* pin = graphNode->GetAllPins()[q];
+
+            if(pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
+            outputPinIndex++;
+
+            FPinInfo& info = runtimeNode->NextIDs.AddDefaulted_GetRef();
+            info.Title = graphNode->GetPinInfo()[outputPinIndex].Title;
+
+            if(!pin->HasAnyConnections()) info.NextID = -1;
+            else info.NextID = *GuidToIndex.Find(pin->LinkedTo[0]->GetOwningNode()->NodeGuid);
         }
-        _RemovedNodes.Empty();
     }
-
-    CreateRuntimeNode(nodes[0]);
-    // TODO: Fix issue where adding a choice node sometimes will empty all the other nodes nextID, running this a second time seems to fix the issue for some reason
-    CreateRuntimeNode(nodes[0]);
-}
-
-void FDialogAssetEditor::CreateGraphNode(int runtimeNodeID, UEdGraphPin* fromPin)
-{
-    const FDialogNode* runtimeNode = _WorkingAsset->GetNode(runtimeNodeID);
-    if(runtimeNode == nullptr) return;
-
-    UDialogGraphNode_Base* graphNode;
-    switch (runtimeNode->NodeType)
-    {
-        case NodeType::Start:
-            graphNode = NewObject<UDialogGraphNode_Start>(_WorkingGraph);
-            break;
-        case NodeType::Line:
-            graphNode = NewObject<UDialogGraphNode_Line>(_WorkingGraph);
-            Cast<UDialogGraphNode_Line>(graphNode)->SetDialogLine(FText::FromString(runtimeNode->DialogText));
-            break;
-        case NodeType::Choice:
-            graphNode = NewObject<UDialogGraphNode_Choice>(_WorkingGraph);
-            break;
-    }
-
-    graphNode->SetupNode(fromPin, &runtimeNode->editorData, true);
-    graphNode->runtimeNodeID = runtimeNodeID;
-
-    _WorkingGraph->AddNode(graphNode, true, true);
-
-    for (int i = 0; i < runtimeNode->NextIDs.Num(); i++)
-    {
-        CreateGraphNode(runtimeNode->NextIDs[i], graphNode->GetPinWithDirectionAt(i, EEdGraphPinDirection::EGPD_Output));
-    }
-}
-
-int FDialogAssetEditor::CreateRuntimeNode(UDialogGraphNode_Base* graphNode)
-{
-    if(graphNode == nullptr) return -1;
-
-    NodeType nodeType;
-
-    if (Cast<UDialogGraphNode_Start>(graphNode) != nullptr) nodeType = NodeType::Start;
-    if (Cast<UDialogGraphNode_Line>(graphNode) != nullptr) nodeType = NodeType::Line;
-    if (Cast<UDialogGraphNode_Choice>(graphNode) != nullptr) nodeType = NodeType::Choice;
-
-    FDialogNode* runtimeNode = _WorkingAsset->GetOrAddNode(graphNode->runtimeNodeID, nodeType);
-    graphNode->runtimeNodeID = runtimeNode->ID;
-
-    if(nodeType == NodeType::Line)
-    {
-        runtimeNode->DialogText = Cast<UDialogGraphNode_Line>(graphNode)->GetDialogLine().ToString();
-    }
-
-    runtimeNode->editorData = FEditorData
-        (
-            graphNode->GetOutputPinCount(),
-            graphNode->GetPosition(),
-            graphNode->NodeComment
-        );
-
-    runtimeNode->NextIDs.Empty();
-    for (int i = 0; i < graphNode->GetAllPins().Num(); i++)
-    {
-        if(graphNode->GetAllPins()[i]->Direction == EEdGraphPinDirection::EGPD_Input) continue;
-        if(!graphNode->GetAllPins()[i]->HasAnyConnections()) continue;
-
-        int id = CreateRuntimeNode(Cast<UDialogGraphNode_Base>(graphNode->GetAllPins()[i]->LinkedTo[0]->GetOwningNode()));
-        runtimeNode->NextIDs.Add(id);
-    }
-
-    return runtimeNode->ID;
 }

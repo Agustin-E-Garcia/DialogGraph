@@ -27,8 +27,9 @@ const FPinConnectionResponse UDialogGraphSchema::CanCreateConnection(const UEdGr
 UEdGraphNode* FNewChoiceNodeAction::PerformAction(UEdGraph* parentGraph, UEdGraphPin* fromPin, const FVector2D location, bool bSelectNewNode)
 {
     UDialogGraphNode_Base* result = NewObject<UDialogGraphNode_Choice>(parentGraph);
-    FEditorData editorData(1, FVector2f(location.X, location.Y), "");
-    result->SetupNode(fromPin, &editorData);
+    FEditorData editorData(FVector2f(location.X, location.Y), "");
+    result->SetupNode(&editorData);
+    result->TryConnectToNode(fromPin, result);
 
     parentGraph->Modify();
     parentGraph->AddNode(result, true, true);
@@ -39,8 +40,9 @@ UEdGraphNode* FNewChoiceNodeAction::PerformAction(UEdGraph* parentGraph, UEdGrap
 UEdGraphNode* FNewLineNodeAction::PerformAction(UEdGraph* parentGraph, UEdGraphPin* fromPin, const FVector2D location, bool bSelectNewNode)
 {
     UDialogGraphNode_Base* result = NewObject<UDialogGraphNode_Line>(parentGraph);
-    FEditorData editorData(1, FVector2f(location.X, location.Y), "");
-    result->SetupNode(fromPin, &editorData);
+    FEditorData editorData(FVector2f(location.X, location.Y), "");
+    result->SetupNode(&editorData);
+    result->TryConnectToNode(fromPin, result);
 
     parentGraph->Modify();
     parentGraph->AddNode(result, true, true);

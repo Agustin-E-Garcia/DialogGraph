@@ -1,3 +1,4 @@
+#include "Widgets/SNullWidget.h"
 #include <EditorGraph/DialogAssetInspectorTabFactory.h>
 #include <DialogAssetEditor.h>
 #include <Kismet2/BlueprintEditorUtils.h>
@@ -16,6 +17,11 @@ FDialogAssetInspectorTabFactory::FDialogAssetInspectorTabFactory(TSharedPtr<FDia
 TSharedRef<SWidget> FDialogAssetInspectorTabFactory::CreateTabBody(const FWorkflowTabSpawnInfo& info) const
 {
     TSharedPtr<FDialogAssetEditor> editor = _DialogAssetEditor.Pin();
+    if (!editor.IsValid())
+    {
+        return SNullWidget::NullWidget;
+    }
+
     FPropertyEditorModule& propertyEditorModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>(TEXT("PropertyEditor"));
 
     FDetailsViewArgs detailsViewArgs;
