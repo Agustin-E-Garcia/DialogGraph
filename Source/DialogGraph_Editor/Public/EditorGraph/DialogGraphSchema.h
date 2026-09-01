@@ -13,6 +13,11 @@ public:
     virtual const FPinConnectionResponse CanCreateConnection(const UEdGraphPin* a, const UEdGraphPin* b) const override;
 };
 
+struct FDialogGraphSchemaAction_NewNode : public FEdGraphSchemaAction
+{
+    GENERATED_BODY();
+};
+
 USTRUCT()
 struct FNewNodeBaseAction : public FEdGraphSchemaAction
 {

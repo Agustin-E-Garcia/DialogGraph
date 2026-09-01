@@ -28,7 +28,7 @@ public:
     virtual bool CanUserDeleteNode() const override { return true; }
 
     int GetOutputPinCount() const { return GetAllPins().Num() - 1; }
-    virtual NodeType GetNodeType() const { return NodeType::DEFAULT; }
+    virtual ENodeType GetNodeType() const { return ENodeType::DEFAULT; }
 
     TArray<FPinInfo>& GetPinInfo() { return _PinInfo; }
     void SetPinInfo(TArray<FPinInfo> info) { _PinInfo = info; }

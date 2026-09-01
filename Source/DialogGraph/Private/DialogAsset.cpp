@@ -24,3 +24,9 @@ FDialogNode* UDialogAsset::GetOrAddNode(int ID)
     else return CreateNewNode();
 
 }
+
+void UDialogAsset::Clear()
+{
+    DialogNodes.Empty();
+    StartNodeID = -1;
+}

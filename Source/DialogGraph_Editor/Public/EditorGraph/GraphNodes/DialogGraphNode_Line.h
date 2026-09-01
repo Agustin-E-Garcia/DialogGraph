@@ -14,7 +14,7 @@ public:
     virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override { return FText::FromString(TEXT("Dialog Line")); }
     virtual FLinearColor GetNodeTitleColor() const override { return FLinearColor(FColor::Blue); }
 
-    virtual NodeType GetNodeType() const override { return NodeType::Line; }
+    virtual ENodeType GetNodeType() const override { return ENodeType::Line; }
 
     void SetDialogLine(FString inText);
     FString GetDialogLine();

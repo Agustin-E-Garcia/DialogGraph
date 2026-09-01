@@ -27,10 +27,11 @@ struct FPinInfo
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) FString Title;
 };
 
-UENUM()
-enum NodeType
+UENUM(BlueprintType) 
+enum class ENodeType : uint8
 {
-    DEFAULT,
+    DEFAULT UMETA(Hidden),
+    Start UMETA(Hidden),
     Line,
     Choice,
 };
@@ -41,10 +42,10 @@ struct FDialogNode
     GENERATED_BODY()
 
     FDialogNode() { }
-    FDialogNode(NodeType type, int id) : ID(id), NodeType(type) {}
+    FDialogNode(ENodeType type, int id) : ID(id), NodeType(type) {}
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int ID;
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TEnumAsByte<NodeType> NodeType;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) ENodeType NodeType;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TArray<FPinInfo> NextIDs;
 
     // TODO flag with editor only so it's not compiled into the game

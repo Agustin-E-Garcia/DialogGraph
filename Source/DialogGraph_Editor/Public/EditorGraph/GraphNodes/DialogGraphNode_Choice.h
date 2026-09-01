@@ -13,7 +13,7 @@ public:
     virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override { return FText::FromString(TEXT("Dialog Choice")); }
     virtual FLinearColor GetNodeTitleColor() const override { return FLinearColor(FColor::Yellow); }
 
-    virtual NodeType GetNodeType() const override { return NodeType::Choice; }
+    virtual ENodeType GetNodeType() const override { return ENodeType::Choice; }
 
     void SetPinOption(FGuid pinGuid, FString optionTitle);
 

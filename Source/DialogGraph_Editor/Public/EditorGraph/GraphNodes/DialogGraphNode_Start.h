@@ -14,6 +14,8 @@ public:
     virtual FLinearColor GetNodeTitleColor() const override { return FLinearColor(FColor::Red); }
 
     virtual bool CanUserDeleteNode() const override { return false; }
+
+    virtual ENodeType GetNodeType() const override { return ENodeType::Start; }
 protected:
     virtual UEdGraphPin* SetupNodePins() override;
     virtual void AddMenuActions(FToolMenuSection* section) const override {}

@@ -67,7 +67,6 @@ void FDialogAssetEditor::InitializeGraphFromAsset()
     startNode->SetupNode(&editorData);
     _WorkingGraph->AddNode(startNode, true, true);
 
-    // TODO: if we're not empty, make a map of runtimenode -> graph node, then populate the nodes and link them
     TMap<int, UDialogGraphNode_Base*> IndexToGraphNode;
     for(int i = 0; i < _WorkingAsset->GetNodeCount(); i++)
     {
@@ -76,10 +75,10 @@ void FDialogAssetEditor::InitializeGraphFromAsset()
 
         switch(runtimeNode->NodeType)
         {
-            case NodeType::Line:
+            case ENodeType::Line:
                 graphNode = NewObject<UDialogGraphNode_Line>(_WorkingGraph);
                 break;
-            case NodeType::Choice:
+            case ENodeType::Choice:
                 graphNode = NewObject<UDialogGraphNode_Choice>(_WorkingGraph);
                 break;
         }
@@ -91,7 +90,7 @@ void FDialogAssetEditor::InitializeGraphFromAsset()
         _WorkingGraph->AddNode(graphNode, true, true);
     }
 
-    startNode->TryConnectToNode(startNode->GetPinAt(0), IndexToGraphNode.FindRef(0)); // We connect the start node to the first node
+    startNode->TryConnectToNode(startNode->GetPinAt(0), IndexToGraphNode.FindRef(_WorkingAsset->GetStartNodeID())); // We connect the start node to the first node
 
     for(int t = 0; t < _WorkingAsset->GetNodeCount(); t++)
     {
@@ -122,7 +121,8 @@ void FDialogAssetEditor::UpdateAssetFromGraph()
     TMap<FGuid, int> GuidToIndex;
     for(int i = 0; i < nodes.Num(); i++)
     {
-        if(nodes[i]->GetNodeType() == NodeType::DEFAULT) continue;
+        if(nodes[i]->GetNodeType() == ENodeType::DEFAULT) continue;
+        if(nodes[i]->GetNodeType() == ENodeType::Start) continue;
 
         FDialogNode* runtimeNode = _WorkingAsset->CreateNewNode();
         GuidToIndex.Emplace(nodes[i]->NodeGuid, runtimeNode->ID);
@@ -137,9 +137,19 @@ void FDialogAssetEditor::UpdateAssetFromGraph()
 
     for(int t = 0; t < nodes.Num(); t++)
     {
-        if(nodes[t]->GetNodeType() == NodeType::DEFAULT) continue;
-
         UDialogGraphNode_Base* graphNode = nodes[t];
+        
+        if(graphNode->GetNodeType() == ENodeType::DEFAULT) continue;
+        if(graphNode->GetNodeType() == ENodeType::Start)
+        {
+            if(graphNode->GetPinAt(0)->HasAnyConnections())
+            {
+                _WorkingAsset->SetStartNodeID(*GuidToIndex.Find(graphNode->GetPinAt(0)->LinkedTo[0]->GetOwningNode()->NodeGuid));
+            }
+
+            continue;
+        }
+
         FDialogNode* runtimeNode = _WorkingAsset->GetNode(GuidToIndex[graphNode->NodeGuid]);
         runtimeNode->NextIDs.Reserve(graphNode->GetAllPins().Num() - 1);
 
