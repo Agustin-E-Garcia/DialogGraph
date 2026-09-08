@@ -1,9 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#include "DialogAsset.h"
 #include "DialogAssetFunctionLibrary.h"
+#include "DialogAsset.h"
 
-void UDialogAssetFunctionLibrary::GetNodeType(const FDialogNode& Node, ENodeType& OutType)
+void UDialogAssetFunctionLibrary::GetNodeType(const FDialogNode& Node, EDialogNodeType& OutType)
 {
     OutType = Node.NodeType;
 }

@@ -4,16 +4,18 @@
 #include <WorkflowOrientedApp/ApplicationMode.h>
 #include <WorkflowOrientedApp/WorkflowTabManager.h>
 
-class FDialogGraphEditMode : public FApplicationMode
+class FDialogAssetEditorApplicationMode : public FApplicationMode
 {
 public:
-    FDialogGraphEditMode(TSharedPtr<class FDialogAssetEditor> editor);
+    FDialogAssetEditorApplicationMode(TSharedPtr<class FDialogAssetEditor> editor);
 
     virtual void RegisterTabFactories(TSharedPtr<class FTabManager> inTabManager) override;
     virtual void PreDeactivateMode() override;
     virtual void PostActivateMode() override;
 
-private:
-    TWeakPtr<class FDialogAssetEditor> _DialogAssetEditor;
-    FWorkflowAllowedTabSet _AllowedTabs;
+protected:
+    TWeakPtr<class FDialogAssetEditor> DialogAssetEditor;
+
+    // Set of spawnable tabs in behaviour tree editing mode
+    FWorkflowAllowedTabSet DialogAssetEditorTabFactories;
 };

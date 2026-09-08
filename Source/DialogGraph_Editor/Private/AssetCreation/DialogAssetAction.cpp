@@ -23,7 +23,7 @@ void FDialogAssetAction::OpenAssetEditor(const TArray<UObject*>& inObjects, TSha
         if(dialogAsset != nullptr)
         {
             TSharedRef<FDialogAssetEditor> editor(new FDialogAssetEditor());
-            editor->InitEditor(mode, editWithinLevelEditor, dialogAsset);
+            editor->InitDialogAssetGraph(mode, editWithinLevelEditor, dialogAsset);
         }
     }
 }

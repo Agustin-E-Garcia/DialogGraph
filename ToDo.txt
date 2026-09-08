@@ -1,0 +1,11 @@
+Polish:
+    - Fix undo/redo for every action we have available
+    - Implement Cut, Copy, Paste and Duplicate
+    - Add knot node for rerouting
+
+Development:
+    - Add Conditions to dialog branches
+    - Add lock image to the condition's ui (no condition functionality yet)
+    - Research how to call functions from a function blueprint library in the graph (task nodes)
+    - Add Blackboard functionality from BehaviourTrees into Dialog Graph
+        - Maybe instead of blackboard we can add a Data Table for character data

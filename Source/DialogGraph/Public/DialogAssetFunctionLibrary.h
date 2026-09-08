@@ -19,7 +19,7 @@ class DIALOGGRAPH_API UDialogAssetFunctionLibrary : public UBlueprintFunctionLib
 {
     GENERATED_BODY()
 
-    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetNodeType(const FDialogNode& Node, ENodeType& OutType);
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetNodeType(const FDialogNode& Node, EDialogNodeType& OutType);
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetLineText(const FDialogNode& Node, FText& OutText);
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetChoiceOptions(const FDialogNode& Node, TArray<FPinInfo>& OutOptions);
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetOptionText(const FPinInfo& Option, FText& OutText);

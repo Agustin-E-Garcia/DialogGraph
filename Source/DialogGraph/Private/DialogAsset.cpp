@@ -1,5 +1,9 @@
 #include <DialogAsset.h>
 
+UDialogAsset::UDialogAsset(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) 
+{
+}
+
 FDialogNode* UDialogAsset::CreateNewNode()
 {
     int id = DialogNodes.AddDefaulted();

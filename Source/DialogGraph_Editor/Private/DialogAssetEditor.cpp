@@ -1,171 +1,218 @@
+#include "DialogAssetEditor.h"
+#include "DialogAssetGraph.h"
+#include "DialogGraph_Editor.h"
 #include "EdGraph/EdGraphNode.h"
-#include "EdGraph/EdGraphPin.h"
-#include "EditorGraph/GraphNodes/DialogGraphNode_Base.h"
+#include "EdGraph/EdGraphSchema.h"
+#include "Framework/Commands/UIAction.h"
+#include "Framework/Commands/UICommandList.h"
+#include "Framework/Docking/TabManager.h"
+#include "GraphEditor.h"
+#include "Logging/LogCategory.h"
+#include "Logging/LogMacros.h"
+#include "Modules/ModuleManager.h"
+#include "ScopedTransaction.h"
+#include "Templates/SharedPointer.h"
+#include "Templates/SubclassOf.h"
+#include "Toolkits/AssetEditorToolkit.h"
 #include "UObject/UObjectGlobals.h"
-#include <DialogAssetEditor.h>
-#include <EditorGraph/DialogGraphEditMode.h>
-#include <EditorGraph/DialogGraphSchema.h>
-#include <DialogAsset.h>
-#include <Kismet2/BlueprintEditorUtils.h>
-#include <EditorGraph/GraphNodes/DialogGraphNode_Start.h>
-#include <EditorGraph/GraphNodes/DialogGraphNode_Line.h>
-#include <EditorGraph/GraphNodes/DialogGraphNode_Choice.h>
-#include <GraphEditAction.h>
-#include <DialogNode.h>
+#include "DialogAssetEditorApplicationMode.h"
+#include "DialogAsset.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "Framework/Commands/GenericCommands.h"
+#include "WorkflowOrientedApp/WorkflowCentricApplication.h"
 
-void FDialogAssetEditor::RegisterTabSpawners(const TSharedRef<FTabManager>& tabManager)
+const FName FDialogAssetEditor::DialogGraphMode(TEXT("DialogGraph"));
+
+FDialogAssetEditor::FDialogAssetEditor()
 {
-    FWorkflowCentricApplication::RegisterTabSpawners(tabManager);
+    DialogAsset = nullptr;
+
+    GraphClass = UDialogAssetGraph::StaticClass();
+    GraphName = "Dialog Asset";
 }
 
-void FDialogAssetEditor::InitEditor(const EToolkitMode::Type mode, const TSharedPtr<IToolkitHost>& initToolkitHost, UObject* inObject)
+FDialogAssetEditor::~FDialogAssetEditor()
 {
-    _WorkingAsset = Cast<UDialogAsset>(inObject);
-    _WorkingGraph = FBlueprintEditorUtils::CreateNewGraph(_WorkingAsset, *_WorkingAsset->GetName(), UEdGraph::StaticClass(), UDialogGraphSchema::StaticClass());
-
-    TSharedPtr<FExtender> compileExtension = MakeShareable(new FExtender);
-
-    compileExtension->AddToolBarExtension
-        (
-            TEXT("Asset"),
-            EExtensionHook::After,
-            GetToolkitCommands(),
-            FToolBarExtensionDelegate::CreateSP(this, &FDialogAssetEditor::FillToolbar)
-        );
-
-    AddToolbarExtender(compileExtension);
-
-    InitAssetEditor(mode, initToolkitHost, TEXT("DialogAssetEditor"), FTabManager::FLayout::NullLayout, true, true, inObject);
-
-    AddApplicationMode(TEXT("DialogGraphEditMode"), MakeShareable(new FDialogGraphEditMode(SharedThis(this))));
-    SetCurrentMode(TEXT("DialogGraphEditMode"));
-
-    InitializeGraphFromAsset();
 }
 
-void FDialogAssetEditor::FillToolbar(FToolBarBuilder& Builder)
+void FDialogAssetEditor::RegisterTabSpawners(const TSharedRef<FTabManager>& TabManager)
 {
-    Builder.AddToolBarButton
-    (
-        FUIAction(FExecuteAction::CreateSP(this, &FDialogAssetEditor::UpdateAssetFromGraph)),
-        NAME_None,
-        FText::FromString("Compile"),
-        FText::FromString("Compile the dialog graph into runtime data."),
-        FSlateIcon(FAppStyle::GetAppStyleSetName(), "Kismet.Compile")
-    );
+    FWorkflowCentricApplication::RegisterTabSpawners(TabManager);
 }
 
-void FDialogAssetEditor::OnClose() 
+void FDialogAssetEditor::InitDialogAssetGraph(const EToolkitMode::Type Mode, const TSharedPtr<IToolkitHost>& InitToolkitHost, UObject* InObject)
 {
-    //UpdateAssetFromGraph();
-}
+    UDialogAsset* AssetToEdit = Cast<UDialogAsset>(InObject);
 
-void FDialogAssetEditor::InitializeGraphFromAsset()
-{
-    UDialogGraphNode_Start* startNode = NewObject<UDialogGraphNode_Start>(_WorkingGraph);
-    FEditorData editorData;
-    startNode->SetupNode(&editorData);
-    _WorkingGraph->AddNode(startNode, true, true);
-
-    TMap<int, UDialogGraphNode_Base*> IndexToGraphNode;
-    for(int i = 0; i < _WorkingAsset->GetNodeCount(); i++)
+    if(AssetToEdit != nullptr)
     {
-        FDialogNode* runtimeNode = _WorkingAsset->GetNode(i);
-        UDialogGraphNode_Base* graphNode = nullptr;
-
-        switch(runtimeNode->NodeType)
-        {
-            case ENodeType::Line:
-                graphNode = NewObject<UDialogGraphNode_Line>(_WorkingGraph);
-                break;
-            case ENodeType::Choice:
-                graphNode = NewObject<UDialogGraphNode_Choice>(_WorkingGraph);
-                break;
-        }
-
-        graphNode->SetPinInfo(runtimeNode->NextIDs);
-        graphNode->SetupNode(&runtimeNode->editorData);
-
-        IndexToGraphNode.Emplace(runtimeNode->ID, graphNode);
-        _WorkingGraph->AddNode(graphNode, true, true);
+        DialogAsset = Cast<UDialogAsset>(InObject);
     }
 
-    startNode->TryConnectToNode(startNode->GetPinAt(0), IndexToGraphNode.FindRef(_WorkingAsset->GetStartNodeID())); // We connect the start node to the first node
+    const bool bCreateDefaultStandaloneMenu = true;
+    const bool bCreateDefaultToolbar = true;
+    InitAssetEditor(Mode, InitToolkitHost, FDialogGraph_EditorModule::DialogAssetEditorAppIdentifier, FTabManager::FLayout::NullLayout, bCreateDefaultStandaloneMenu, bCreateDefaultToolbar, InObject);
 
-    for(int t = 0; t < _WorkingAsset->GetNodeCount(); t++)
+    FDialogGraph_EditorModule& DialogGraphEditorModule = FModuleManager::LoadModuleChecked<FDialogGraph_EditorModule>("DialogGraph_Editor");
+    AddToolbarExtender(DialogGraphEditorModule.GetToolBarExtensibilityManager()->GetAllExtenders(GetToolkitCommands(), GetEditingObjects()));
+
+    CreateCommandList();
+    RestoreDialogAsset();
+
+    AddApplicationMode(DialogGraphMode, MakeShareable(new FDialogAssetEditorApplicationMode(SharedThis(this))));
+    SetCurrentMode(DialogGraphMode);
+}
+
+void FDialogAssetEditor::RegisterToolbarTab(const TSharedRef<class FTabManager>& InTabManager)
+{
+    FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
+}
+
+void FDialogAssetEditor::RestoreDialogAsset()
+{
+    UDialogAssetGraph* MyGraph = Cast<UDialogAssetGraph>(DialogAsset->DialogGraph);
+    const bool bNewGraph = MyGraph == NULL;
+    if (MyGraph == NULL)
     {
-        FDialogNode* runtimeNode = _WorkingAsset->GetNode(t);
-        UDialogGraphNode_Base* graphNode = IndexToGraphNode.FindRef(runtimeNode->ID);
+        const TSubclassOf<UEdGraphSchema> SchemaClass = GetDefault<UDialogAssetGraph>(GraphClass)->Schema;
+        check(SchemaClass);
+        DialogAsset->DialogGraph = FBlueprintEditorUtils::CreateNewGraph(DialogAsset, GraphName, GraphClass, SchemaClass);
+        MyGraph = Cast<UDialogAssetGraph>(DialogAsset->DialogGraph);
 
-        int outputPinIndex = -1;
-        for(int index = 0; index < graphNode->GetAllPins().Num(); index++)
-        {
-            UEdGraphPin* pin = graphNode->GetPinAt(index);
-            if(pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
+        const UEdGraphSchema* Schema = MyGraph->GetSchema();
+        Schema->CreateDefaultNodesForGraph(*MyGraph);
 
-            UDialogGraphNode_Base* toNode = IndexToGraphNode.FindRef(graphNode->GetPinInfo()[++outputPinIndex].NextID);
-            if(pin != nullptr && toNode != nullptr) graphNode->TryConnectToNode(pin, toNode);
-        }
+        MyGraph->OnCreated();
+    }
+    else
+    {
+        //MyGraph->OnLoaded();
     }
 }
 
-void FDialogAssetEditor::UpdateAssetFromGraph()
+void FDialogAssetEditor::SaveEditedObjectState()
 {
-    TArray<UDialogGraphNode_Base*> nodes;
-    _WorkingGraph->GetNodesOfClass(nodes);
+}
 
-    if(nodes.IsEmpty()) return;
+TSharedPtr<FUICommandList> FDialogAssetEditor::GetGraphEditorCommands()
+{
+    return GraphEditorCommands;
+}
 
-    _WorkingAsset->Clear();
-
-    TMap<FGuid, int> GuidToIndex;
-    for(int i = 0; i < nodes.Num(); i++)
+void FDialogAssetEditor::CreateCommandList()
+{
+    if(!GraphEditorCommands.IsValid())
     {
-        if(nodes[i]->GetNodeType() == ENodeType::DEFAULT) continue;
-        if(nodes[i]->GetNodeType() == ENodeType::Start) continue;
+        GraphEditorCommands = MakeShareable(new FUICommandList);
 
-        FDialogNode* runtimeNode = _WorkingAsset->CreateNewNode();
-        GuidToIndex.Emplace(nodes[i]->NodeGuid, runtimeNode->ID);
+        GraphEditorCommands->MapAction(FGenericCommands::Get().SelectAll,
+            FExecuteAction::CreateSP(this, &FDialogAssetEditor::SelectAllNodes),
+            FCanExecuteAction::CreateSP(this, &FDialogAssetEditor::CanSelectAllNodes)
+            );
 
-        runtimeNode->NodeType = nodes[i]->GetNodeType();
-        runtimeNode->editorData = FEditorData
-                (
-                    nodes[i]->GetPosition(),
-                    nodes[i]->NodeComment
-                );
+        GraphEditorCommands->MapAction(FGenericCommands::Get().Delete,
+            FExecuteAction::CreateSP(this, &FDialogAssetEditor::DeleteSelectedNodes),
+            FCanExecuteAction::CreateSP(this, &FDialogAssetEditor::CanDeleteSelectedNodes)
+            );
+
+        GraphEditorCommands->MapAction(FGenericCommands::Get().Copy,
+            FExecuteAction::CreateSP(this, &FDialogAssetEditor::CopySelectedNodes),
+            FCanExecuteAction::CreateSP(this, &FDialogAssetEditor::CanCopySelectedNodes)
+            );
+
+        GraphEditorCommands->MapAction(FGenericCommands::Get().Cut,
+            FExecuteAction::CreateSP(this, &FDialogAssetEditor::CutSelectedNodes),
+            FCanExecuteAction::CreateSP(this, &FDialogAssetEditor::CanCutSelectedNodes)
+            );
+
+        GraphEditorCommands->MapAction(FGenericCommands::Get().Paste,
+            FExecuteAction::CreateSP(this, &FDialogAssetEditor::PasteSelectedNodes),
+            FCanExecuteAction::CreateSP(this, &FDialogAssetEditor::CanPasteSelectedNodes)
+            );
+
+        GraphEditorCommands->MapAction(FGenericCommands::Get().Duplicate,
+            FExecuteAction::CreateSP(this, &FDialogAssetEditor::DuplicateSelectedNodes),
+            FCanExecuteAction::CreateSP(this, &FDialogAssetEditor::CanDuplicateSelectedNodes)
+            );
     }
+}
 
-    for(int t = 0; t < nodes.Num(); t++)
+void FDialogAssetEditor::SelectAllNodes()
+{
+    if (TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin())
     {
-        UDialogGraphNode_Base* graphNode = nodes[t];
-        
-        if(graphNode->GetNodeType() == ENodeType::DEFAULT) continue;
-        if(graphNode->GetNodeType() == ENodeType::Start)
+        CurrentGraphEditor->SelectAllNodes();
+    }
+}
+bool FDialogAssetEditor::CanSelectAllNodes() { return true; }
+
+void FDialogAssetEditor::DeleteSelectedNodes()
+{
+    TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin();
+    if(!CurrentGraphEditor.IsValid()) return;
+
+    const FScopedTransaction Transaction(FGenericCommands::Get().Delete->GetDescription());
+    CurrentGraphEditor->GetCurrentGraph()->Modify();
+
+    const FGraphPanelSelectionSet SelectedNodes = CurrentGraphEditor->GetSelectedNodes();
+
+    for(FGraphPanelSelectionSet::TConstIterator NodeIt(SelectedNodes); NodeIt; ++NodeIt)
+    {
+        if(UEdGraphNode* Node = Cast<UEdGraphNode>(*NodeIt))
         {
-            if(graphNode->GetPinAt(0)->HasAnyConnections())
+            if(Node->CanUserDeleteNode())
             {
-                _WorkingAsset->SetStartNodeID(*GuidToIndex.Find(graphNode->GetPinAt(0)->LinkedTo[0]->GetOwningNode()->NodeGuid));
+                Node->Modify();
+                Node->DestroyNode();
             }
-
-            continue;
-        }
-
-        FDialogNode* runtimeNode = _WorkingAsset->GetNode(GuidToIndex[graphNode->NodeGuid]);
-        runtimeNode->NextIDs.Reserve(graphNode->GetAllPins().Num() - 1);
-
-        int outputPinIndex = -1; //since we iterate over ALL the pins and we have no guarantees that the input pin will be the first one, we keep track of which output pin we're looking at, not incrementing when it's an input pin
-        for(int q = 0; q < graphNode->GetAllPins().Num(); q++)
-        {
-            const UEdGraphPin* pin = graphNode->GetAllPins()[q];
-
-            if(pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
-            outputPinIndex++;
-
-            FPinInfo& info = runtimeNode->NextIDs.AddDefaulted_GetRef();
-            info.Title = graphNode->GetPinInfo()[outputPinIndex].Title;
-
-            if(!pin->HasAnyConnections()) info.NextID = -1;
-            else info.NextID = *GuidToIndex.Find(pin->LinkedTo[0]->GetOwningNode()->NodeGuid);
         }
     }
+}
+
+bool FDialogAssetEditor::CanDeleteSelectedNodes()
+{
+    // If any of the nodes can be deleted then we should allow deleting
+    TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin();
+    if(!CurrentGraphEditor.IsValid()) return false;
+
+    const FGraphPanelSelectionSet SelectedNodes = CurrentGraphEditor->GetSelectedNodes();
+    for(FGraphPanelSelectionSet::TConstIterator NodeIt(SelectedNodes); NodeIt; ++NodeIt)
+    {
+        UEdGraphNode* Node = Cast<UEdGraphNode>(*NodeIt);
+        if(Node && Node->CanUserDeleteNode()) return true;
+    }
+
+    return false;
+}
+
+void FDialogAssetEditor::CopySelectedNodes()
+{
+    TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin();
+    if(!CurrentGraphEditor.IsValid()) return;
+
+    const FGraphPanelSelectionSet SelectedNodes = CurrentGraphEditor->GetSelectedNodes();
+}
+bool FDialogAssetEditor::CanCopySelectedNodes() { return true; }
+
+void FDialogAssetEditor::CutSelectedNodes() {}
+bool FDialogAssetEditor::CanCutSelectedNodes() { return true; }
+
+void FDialogAssetEditor::PasteSelectedNodes() {}
+bool FDialogAssetEditor::CanPasteSelectedNodes() { return true; }
+
+void FDialogAssetEditor::DuplicateSelectedNodes() {}
+bool FDialogAssetEditor::CanDuplicateSelectedNodes() { return true; }
+
+void FDialogAssetEditor::SaveAsset_Execute()
+{
+    if(DialogAsset)
+    {
+        UDialogAssetGraph* DialogGraph = Cast<UDialogAssetGraph>(DialogAsset->DialogGraph);
+        if(DialogGraph)
+        {
+            DialogGraph->OnSave();
+        }
+    }
+
+    FAssetEditorToolkit::SaveAsset_Execute();
 }

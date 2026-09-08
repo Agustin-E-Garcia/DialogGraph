@@ -1,5 +1,6 @@
 #pragma once
 
+#include "UObject/ObjectMacros.h"
 #include <CoreMinimal.h>
 #include <Engine/DataAsset.h>
 #include <DialogNode.h>
@@ -8,7 +9,7 @@
 UCLASS(BlueprintType)
 class DIALOGGRAPH_API UDialogAsset : public UDataAsset
 {
-    GENERATED_BODY()
+    GENERATED_UCLASS_BODY()
 
 public:
     FDialogNode* CreateNewNode();
@@ -22,6 +23,10 @@ public:
     int GetNodeCount() { return DialogNodes.Num(); }
     bool IsEmpty() { return DialogNodes.IsEmpty(); }
 
+#if WITH_EDITORONLY_DATA
+    UPROPERTY()
+    TObjectPtr<class UEdGraph> DialogGraph;
+#endif
 
 private:
     UPROPERTY(VisibleAnywhere) TArray<FDialogNode> DialogNodes;

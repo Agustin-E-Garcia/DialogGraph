@@ -4,18 +4,6 @@
 #include <DialogNode.generated.h>
 
 USTRUCT(BlueprintType)
-struct FEditorData
-{
-    GENERATED_BODY()
-
-    FEditorData() {}
-    FEditorData(FVector2f position, FString comment) : Position(position), Comment(comment) {}
-
-    UPROPERTY(VisibleAnywhere) FVector2f Position = FVector2f(0.0f, 0.0f);
-    UPROPERTY(VisibleAnywhere) FString Comment = "";
-};
-
-USTRUCT(BlueprintType)
 struct FPinInfo
 {
     GENERATED_BODY()
@@ -27,8 +15,8 @@ struct FPinInfo
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) FString Title;
 };
 
-UENUM(BlueprintType) 
-enum class ENodeType : uint8
+UENUM(BlueprintType)
+enum class EDialogNodeType : uint8
 {
     DEFAULT UMETA(Hidden),
     Start UMETA(Hidden),
@@ -42,12 +30,9 @@ struct FDialogNode
     GENERATED_BODY()
 
     FDialogNode() { }
-    FDialogNode(ENodeType type, int id) : ID(id), NodeType(type) {}
+    FDialogNode(EDialogNodeType type, int id) : ID(id), NodeType(type) {}
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int ID;
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) ENodeType NodeType;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) EDialogNodeType NodeType;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) TArray<FPinInfo> NextIDs;
-
-    // TODO flag with editor only so it's not compiled into the game
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly) FEditorData editorData;
 };
