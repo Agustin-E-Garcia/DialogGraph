@@ -13,11 +13,18 @@ FDialogNode* UDialogAsset::CreateNewNode()
     return node;
 }
 
-FDialogNode* UDialogAsset::GetNode(int Index)
+FDialogNode* UDialogAsset::GetNode(int ID)
 {
-    if(Index < 0  || Index >= DialogNodes.Num()) return nullptr;
+    if(ID < 0  || ID >= DialogNodes.Num()) return nullptr;
 
-    return &DialogNodes[Index];
+    return &DialogNodes[ID];
+}
+
+const FDialogNode* UDialogAsset::GetNode(int ID) const
+{
+    if(ID < 0  || ID >= DialogNodes.Num()) return nullptr;
+
+    return &DialogNodes[ID];
 }
 
 FDialogNode* UDialogAsset::GetOrAddNode(int ID)

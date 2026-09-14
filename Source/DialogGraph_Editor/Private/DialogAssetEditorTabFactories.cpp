@@ -3,7 +3,11 @@
 #include "DialogAsset.h"
 #include "PropertyEditorModule.h"
 
+#include "Styling/AppStyle.h"
+#include "Templates/SharedPointer.h"
+#include "Types/SlateEnums.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
+#include "Widgets/SBoxPanel.h"
 #include "Widgets/SNullWidget.h"
 #include "DialogAssetEditor.h"
 #include "GraphEditor.h"
@@ -16,13 +20,25 @@ FDialogAssetGraphTabFactory::FDialogAssetGraphTabFactory(TSharedPtr<FDialogAsset
 {
     DialogAssetEditorPtr = InDialogAssetEditor;
     TabLabel = FText::FromString("Dialog Graph");
+}
+
+void FDialogAssetGraphTabFactory::Initialize()
+{
+    TSharedPtr<FDialogAssetEditor> editor = DialogAssetEditorPtr.Pin();
+    if (!editor.IsValid()) return;
+
+    SGraphEditor::FGraphEditorEvents GraphEvents;
+    {
+        GraphEvents.OnSelectionChanged.BindSP(this, &FDialogAssetGraphTabFactory::OnSelectionChanged);
+    }
 
     SAssignNew(DialogGraphEditorPtr, SGraphEditor)
-                .AdditionalCommands(InDialogAssetEditor->GetGraphEditorCommands())
+                .AdditionalCommands(editor->GetGraphEditorCommands())
                 .IsEditable(true)
-                .GraphToEdit(InDialogAssetEditor->GetDialogAsset()->DialogGraph);
+                .GraphToEdit(editor->GetDialogAsset()->DialogGraph)
+                .GraphEvents(GraphEvents);
 
-    InDialogAssetEditor->SetGraphEditor(DialogGraphEditorPtr);
+    editor->SetGraphEditor(DialogGraphEditorPtr);
 }
 
 TSharedRef<SWidget> FDialogAssetGraphTabFactory::CreateTabBody(const FWorkflowTabSpawnInfo& info) const
@@ -42,6 +58,14 @@ TSharedRef<SWidget> FDialogAssetGraphTabFactory::CreateTabBody(const FWorkflowTa
 FText FDialogAssetGraphTabFactory::GetTabToolTipText(const FWorkflowTabSpawnInfo& info) const
 {
     return FText::FromString(TEXT("Graph view to build and visualize dialogs"));
+}
+
+void FDialogAssetGraphTabFactory::OnSelectionChanged(const TSet<class UObject*>& NewSelection)
+{
+    TSharedPtr<FDialogAssetEditor> editor = DialogAssetEditorPtr.Pin();
+    if(!editor.IsValid()) return;
+
+    editor->OnSelectedNodesChanged(NewSelection);
 }
 
 ///////////////////////////////////////
@@ -90,6 +114,35 @@ TSharedRef<SWidget> FDialogAssetInspectorTabFactory::CreateTabBody(const FWorkfl
 }
 
 FText FDialogAssetInspectorTabFactory::GetTabToolTipText(const FWorkflowTabSpawnInfo& info) const
+{
+    return FText::FromString(TEXT("Inspector to visualize dialog asset data"));
+}
+
+///////////////////////////////////////
+// Dialog Graph Inspector Tab Factory
+//////////////////////////////////////
+
+FDialogGraphDetailsTabFactory::FDialogGraphDetailsTabFactory(TSharedPtr<FDialogAssetEditor> InDialogAssetEditorPtr) : FWorkflowTabFactory(FDialogAssetEditorTabs::GraphDetailsID, InDialogAssetEditorPtr)
+{
+    DialogAssetEditorPtr = InDialogAssetEditorPtr;
+
+    TabLabel = FText::FromString("Details");
+    TabIcon = FSlateIcon(FAppStyle::GetAppStyleSetName(), "LevelEditor.Tabs.Details");
+
+    bIsSingleton = true;
+
+    ViewMenuDescription = FText::FromString("Details");
+    ViewMenuTooltip = FText::FromString("Show the details view");
+}
+
+TSharedRef<SWidget> FDialogGraphDetailsTabFactory::CreateTabBody(const FWorkflowTabSpawnInfo& info) const
+{
+    check(DialogAssetEditorPtr.IsValid());
+    return DialogAssetEditorPtr.Pin()->SpawnProperties();
+}
+
+
+FText FDialogGraphDetailsTabFactory::GetTabToolTipText(const FWorkflowTabSpawnInfo& info) const
 {
     return FText::FromString(TEXT("Inspector to visualize dialog asset data"));
 }

@@ -1,4 +1,5 @@
 #include "DialogAssetEditor.h"
+#include "DetailsViewArgs.h"
 #include "DialogAssetGraph.h"
 #include "DialogGraph_Editor.h"
 #include "EdGraph/EdGraphNode.h"
@@ -7,18 +8,22 @@
 #include "Framework/Commands/UICommandList.h"
 #include "Framework/Docking/TabManager.h"
 #include "GraphEditor.h"
-#include "Logging/LogCategory.h"
-#include "Logging/LogMacros.h"
 #include "Modules/ModuleManager.h"
+#include "PropertyEditorDelegates.h"
+#include "PropertyEditorModule.h"
 #include "ScopedTransaction.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/SubclassOf.h"
 #include "Toolkits/AssetEditorToolkit.h"
+#include "Types/SlateEnums.h"
 #include "UObject/UObjectGlobals.h"
 #include "DialogAssetEditorApplicationMode.h"
 #include "DialogAsset.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Framework/Commands/GenericCommands.h"
+#include "UObject/UnrealType.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
+#include "Widgets/SBoxPanel.h"
 #include "WorkflowOrientedApp/WorkflowCentricApplication.h"
 
 const FName FDialogAssetEditor::DialogGraphMode(TEXT("DialogGraph"));
@@ -57,6 +62,7 @@ void FDialogAssetEditor::InitDialogAssetGraph(const EToolkitMode::Type Mode, con
     AddToolbarExtender(DialogGraphEditorModule.GetToolBarExtensibilityManager()->GetAllExtenders(GetToolkitCommands(), GetEditingObjects()));
 
     CreateCommandList();
+    CreateInternalWidgets();
     RestoreDialogAsset();
 
     AddApplicationMode(DialogGraphMode, MakeShareable(new FDialogAssetEditorApplicationMode(SharedThis(this))));
@@ -215,4 +221,58 @@ void FDialogAssetEditor::SaveAsset_Execute()
     }
 
     FAssetEditorToolkit::SaveAsset_Execute();
+}
+
+void FDialogAssetEditor::CreateInternalWidgets()
+{
+    FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+    FDetailsViewArgs DetailsViewArgs;
+    {
+        DetailsViewArgs.bLockable = false;
+        DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
+        DetailsViewArgs.NotifyHook = this;
+        DetailsViewArgs.DefaultsOnlyVisibility = EEditDefaultsOnlyNodeVisibility::Hide;
+    }
+
+    DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
+    DetailsView->SetObject(NULL);
+    DetailsView->SetIsPropertyEditingEnabledDelegate(FIsPropertyEditingEnabled::CreateSP(this, &FDialogAssetEditor::IsPropertyEditable));
+    DetailsView->OnFinishedChangingProperties().AddSP(this, &FDialogAssetEditor::OnFinishedChangingProperties);
+}
+
+
+bool FDialogAssetEditor::IsPropertyEditable() const
+{
+    TSharedPtr<SGraphEditor> GraphEditor = GraphEditorPtr.Pin();
+    return GraphEditor.IsValid() && GraphEditor->GetCurrentGraph() && GraphEditor->GetCurrentGraph()->bEditable;
+}
+
+void FDialogAssetEditor::OnFinishedChangingProperties(const FPropertyChangedEvent& PropertyChangedEvent)
+{
+}
+
+TSharedRef<SWidget> FDialogAssetEditor::SpawnProperties()
+{
+    return SNew(SVerticalBox)
+            +SVerticalBox::Slot()
+            .FillHeight(1.0f)
+            .HAlign(HAlign_Fill)
+            [
+                DetailsView.ToSharedRef()
+            ];
+}
+
+void FDialogAssetEditor::OnSelectedNodesChanged(const TSet<class UObject*>& NewSelection)
+{
+    if(!DetailsView.IsValid()) return;
+
+    UE_LOG(LogTemp, Log, TEXT("NewSelection.Num() = %i"), NewSelection.Num());
+
+    if(NewSelection.Num() > 0) DetailsView->SetObjects(NewSelection.Array());
+    else DetailsView->SetObject(nullptr);
+}
+
+void FDialogAssetEditor::NotifyPostChange(const FPropertyChangedEvent& PropertychangedEvent, FProperty* PropertyThatChanged)
+{
 }

@@ -4,7 +4,7 @@
 #include "DialogAssetGraphNode.h"
 #include "DialogAssetGraphNode_Line.generated.h"
 
-UCLASS(MinimalAPI)
+UCLASS()
 class UDialogAssetGraphNode_Line : public UDialogAssetGraphNode
 {
     GENERATED_UCLASS_BODY()
@@ -17,10 +17,12 @@ public:
     virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override { return FText::FromString(TEXT("Dialog Line")); }
     //~ End UEdGraphNode interface
 
-    FText GetDialogLine() { return DialogLine; }
+    virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const override;
+
+    FText GetDialogLine() const { return DialogLine; }
     void SetDialogLine(const FText& InDialogLine) { DialogLine = InDialogLine; }
 
 private:
-    UPROPERTY()
+    UPROPERTY(EditAnywhere)
     FText DialogLine;
 };

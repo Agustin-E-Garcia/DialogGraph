@@ -29,6 +29,24 @@ FSlateIcon UDialogAssetGraphNode_Choice::GetIconAndTint(FLinearColor& OutColor) 
     return Icon;
 }
 
+void UDialogAssetGraphNode_Choice::ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const
+{
+    int outputPinIndex = -1;
+    for(int q = 0; q < GetAllPins().Num(); q++)
+    {
+        const UEdGraphPin* pin = GetAllPins()[q];
+
+        if(pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
+        outputPinIndex++;
+
+        FPinInfo& info = RuntimeNode->NextIDs.AddDefaulted_GetRef();
+        info.Title = pin->GetDefaultAsString();
+
+        if(!pin->HasAnyConnections()) info.NextID = -1;
+        else info.NextID = *GuidToIndex.Find(pin->LinkedTo[0]->GetOwningNode()->NodeGuid);
+     }
+}
+
 void UDialogAssetGraphNode_Choice::AddPin()
 {
     UEdGraphPin* pin = CreatePin(EGPD_Output, UDialogAssetEditorTypes::PinCategory_SingleNode, TEXT(""));

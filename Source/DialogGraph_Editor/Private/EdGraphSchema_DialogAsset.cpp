@@ -5,26 +5,30 @@
 #include "DialogAssetGraphNode.h"
 #include "DialogAssetGraphNode_Choice.h"
 #include "DialogAssetGraphNode_Root.h"
+#include "DialogAssetGraphNode_Task.h"
+#include "DialogGraphFunctionLibrary.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "EdGraphNode_Comment.h"
-#include "Framework/Commands/Commands.h"
 #include "Framework/Commands/UIAction.h"
-#include "Framework/Commands/UICommandInfo.h"
-#include "GenericPlatform/GenericApplication.h"
 #include "GraphEditor.h"
-#include "InputCoreTypes.h"
 #include "Internationalization/Text.h"
 #include "Modules/ModuleManager.h"
 #include "ScopedTransaction.h"
 #include "AIGraphTypes.h"
 #include "DialogGraph_Editor.h"
 #include "Styling/AppStyle.h"
+#include "Templates/SharedPointer.h"
+#include "Templates/SubclassOf.h"
 #include "Textures/SlateIcon.h"
 #include "ToolMenuSection.h"
+#include "UObject/Linker.h"
+#include "UObject/Script.h"
 #include "UObject/UObjectGlobals.h"
 #include "ToolMenu.h"
 #include "Framework/Commands/GenericCommands.h"
+#include "DialogAsset.h"
+#include "UObject/UnrealType.h"
 
 namespace
 {
@@ -154,6 +158,32 @@ void UEdGraphSchema_DialogAsset::GetGraphContextActions(FGraphContextMenuBuilder
             AddOpAction->NodeTemplate = OpNode;
         }
         ContextMenuBuilder.Append(NodesBuilder);
+    }
+
+    // Add the ability to create different task-nodes, one for each function we can find in the registered libraries
+    {
+        UDialogAsset* DialogAsset = CastChecked<UDialogAsset>(ContextMenuBuilder.CurrentGraph->GetOuter());
+        FCategorizedGraphActionListBuilder TasksBuilder(TEXT("Tasks"));
+
+        for(const TSubclassOf<UDialogGraphFunctionLibrary>& LibraryClass : DialogAsset->RegisteredLibraries)
+        {
+            if(!LibraryClass) continue;
+
+            UClass* Class = LibraryClass.Get();
+
+            for(TFieldIterator<UFunction> FuncIt(Class); FuncIt; ++FuncIt)
+            {
+                UFunction* Function = *FuncIt;
+                if(!Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintPure)) continue;
+
+                TSharedPtr<FDialogSchemaAction_NewNode> AddTaskAction = UEdGraphSchema_DialogAsset::AddNewNodeAction(TasksBuilder, FText::FromString(""), FText::FromString(FuncIt->GetName()), FuncIt->GetToolTipText());
+
+                UDialogAssetGraphNode_Task* TaskNode = NewObject<UDialogAssetGraphNode_Task>(ContextMenuBuilder.OwnerOfTemporaries, UDialogAssetGraphNode_Task::StaticClass());
+                TaskNode->SetFunctionData(Class, Function->GetFName());
+                AddTaskAction->NodeTemplate = TaskNode;
+            }
+        }
+        ContextMenuBuilder.Append(TasksBuilder);
     }
 
     // Add the ability to create a comment to the context menu

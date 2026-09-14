@@ -1,10 +1,10 @@
 #pragma once
 
-#include "UObject/ObjectMacros.h"
-#include <CoreMinimal.h>
-#include <Engine/DataAsset.h>
-#include <DialogNode.h>
-#include <DialogAsset.generated.h>
+#include "CoreMinimal.h"
+#include "Engine/DataAsset.h"
+#include "DialogNode.h"
+#include "DialogGraphFunctionLibrary.h"
+#include "DialogAsset.generated.h"
 
 UCLASS(BlueprintType)
 class DIALOGGRAPH_API UDialogAsset : public UDataAsset
@@ -14,14 +14,18 @@ class DIALOGGRAPH_API UDialogAsset : public UDataAsset
 public:
     FDialogNode* CreateNewNode();
     FDialogNode* GetNode(int ID);
+    const FDialogNode* GetNode(int ID) const;
     FDialogNode* GetOrAddNode(int ID);
     void Clear();
 
-    int GetStartNodeID() { return StartNodeID; }
+    int GetStartNodeID() const { return StartNodeID; }
     void SetStartNodeID(int index) { StartNodeID = index; }
 
-    int GetNodeCount() { return DialogNodes.Num(); }
-    bool IsEmpty() { return DialogNodes.IsEmpty(); }
+    int GetNodeCount() const { return DialogNodes.Num(); }
+    bool IsEmpty() const { return DialogNodes.IsEmpty(); }
+
+    UPROPERTY(EditAnywhere)
+    TArray<TSubclassOf<UDialogGraphFunctionLibrary>> RegisteredLibraries;
 
 #if WITH_EDITORONLY_DATA
     UPROPERTY()
@@ -29,6 +33,10 @@ public:
 #endif
 
 private:
-    UPROPERTY(VisibleAnywhere) TArray<FDialogNode> DialogNodes;
-    UPROPERTY(VisibleAnywhere) int StartNodeID = -1;
+    UPROPERTY(VisibleAnywhere) 
+    TArray<FDialogNode> DialogNodes;
+
+    UPROPERTY(VisibleAnywhere)
+    int StartNodeID = -1;
+
 };

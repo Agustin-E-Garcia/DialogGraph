@@ -1,12 +1,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "DetailsViewArgs.h"
 #include "Framework/Commands/UICommandList.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/SubclassOf.h"
+#include "UObject/UnrealType.h"
 #include "WorkflowOrientedApp/WorkflowCentricApplication.h"
 #include "EditorUndoClient.h"
 #include "DialogAssetGraph.h"
+#include "Misc/NotifyHook.h"
 
 class UDialogAsset;
 class SGraphEditor;
@@ -14,7 +17,7 @@ class UEdGraphPin;
 class UDialogGraphNode_Base;
 struct FEdGraphEditAction;
 
-class FDialogAssetEditor : public FWorkflowCentricApplication, public FEditorUndoClient
+class FDialogAssetEditor : public FWorkflowCentricApplication, public FEditorUndoClient, public FNotifyHook
 {
 public:
     FDialogAssetEditor();
@@ -34,6 +37,13 @@ public:
     //~ Begin FEditorUndoClient interface
     //~ End FEditorUndoClient interface
 
+    //~ Begin FNotifyHook interface
+    virtual void NotifyPostChange(const FPropertyChangedEvent& PropertyChangedEvent, FProperty* PropertyThatChanged) override;
+    //~ End FNotifyHook interface
+
+    bool IsPropertyEditable() const;
+    void OnFinishedChangingProperties(const FPropertyChangedEvent& PropertyChangedEvent);
+
     /** Register the SGraphEditor object */
     void SetGraphEditor(TSharedPtr<class SGraphEditor> GraphEditor) { GraphEditorPtr = GraphEditor; }
 
@@ -48,8 +58,13 @@ public:
     /** Save the graph state for later editing */
     void SaveEditedObjectState();
 
+    TSharedRef<SWidget> SpawnProperties();
+
     /** Get the editor commands to apply to this graph */
     TSharedPtr<FUICommandList> GetGraphEditorCommands();
+
+    /** Called when the selection changes in the GraphEditor */
+    void OnSelectedNodesChanged(const TSet<class UObject*>& NewSelection);
 
 protected:
     /** Called when "Save" is clicked for this asset */
@@ -83,8 +98,14 @@ private:
     void DuplicateSelectedNodes();
     bool CanDuplicateSelectedNodes();
 
-    UPROPERTY()
+    /** Creates all internal widgets for the tabs to point at */
+    void CreateInternalWidgets();
+
+    /** The Dialog Asset being edited */
     UDialogAsset* DialogAsset = nullptr;
+
+    /** Property Editor */
+    TSharedPtr<class IDetailsView> DetailsView;
 
 public:
     static const FName DialogGraphMode;

@@ -75,21 +75,6 @@ void UDialogAssetGraph::UpdateAsset()
         FDialogNode* runtimeNode = DialogAsset->GetNode(GuidToIndex[graphNode->NodeGuid]);
         runtimeNode->NextIDs.Reserve(graphNode->GetAllPins().Num() - 1);
 
-        int outputPinIndex = -1; //since we iterate over ALL the pins and we have no guarantees that the input pin will be the first one, we keep track of which output pin we're looking at, not incrementing when it's an input pin
-        for(int q = 0; q < graphNode->GetAllPins().Num(); q++)
-        {
-            const UEdGraphPin* pin = graphNode->GetAllPins()[q];
-
-            if(pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
-            outputPinIndex++;
-
-            FPinInfo& info = runtimeNode->NextIDs.AddDefaulted_GetRef();
-
-            if(UDialogAssetGraphNode_Line* GraphNode_Line = Cast<UDialogAssetGraphNode_Line>(graphNode)) info.Title = GraphNode_Line->GetDialogLine().ToString();
-            else info.Title = pin->GetDefaultAsString();
-
-            if(!pin->HasAnyConnections()) info.NextID = -1;
-            else info.NextID = *GuidToIndex.Find(pin->LinkedTo[0]->GetOwningNode()->NodeGuid);
-        }
+        graphNode->ParseToRuntime(runtimeNode, GuidToIndex);
     }
 }

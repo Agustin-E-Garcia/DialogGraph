@@ -22,4 +22,6 @@ public:
     virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
     virtual bool CanUserDeleteNode() const override;
     //~ End UEdGraphNode Interface
+
+    virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const {}
 };

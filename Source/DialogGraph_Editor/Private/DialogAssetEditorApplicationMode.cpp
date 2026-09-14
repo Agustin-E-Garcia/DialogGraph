@@ -2,14 +2,18 @@
 #include "DialogAssetEditor.h"
 #include "DialogAssetEditorTabFactories.h"
 #include "DialogAssetEditorTabs.h"
+#include "Templates/SharedPointer.h"
 
 FDialogAssetEditorApplicationMode::FDialogAssetEditorApplicationMode(TSharedPtr<FDialogAssetEditor> InDialogAssetEditor) : FApplicationMode(FDialogAssetEditor::DialogGraphMode)
 {
     DialogAssetEditor = InDialogAssetEditor;
-    DialogAssetEditorTabFactories.RegisterFactory(MakeShareable(new FDialogAssetGraphTabFactory(InDialogAssetEditor)));
-    DialogAssetEditorTabFactories.RegisterFactory(MakeShareable(new FDialogAssetInspectorTabFactory(InDialogAssetEditor)));
 
-    TabLayout = FTabManager::NewLayout("Standalone_DialogAsset_Layout_v1.1")
+    TSharedRef<FDialogAssetGraphTabFactory> GraphTabFactory = MakeShareable(new FDialogAssetGraphTabFactory(InDialogAssetEditor));
+    GraphTabFactory->Initialize();
+    DialogAssetEditorTabFactories.RegisterFactory(GraphTabFactory);
+    DialogAssetEditorTabFactories.RegisterFactory(MakeShareable(new FDialogGraphDetailsTabFactory(InDialogAssetEditor)));
+
+    TabLayout = FTabManager::NewLayout("Standalone_DialogAsset_Layout_v1.2")
     ->AddArea
     (
         FTabManager::NewPrimaryArea()->SetOrientation(Orient_Vertical)
@@ -26,7 +30,7 @@ FDialogAssetEditorApplicationMode::FDialogAssetEditorApplicationMode(TSharedPtr<
             (
                 FTabManager::NewStack()
                 ->SetSizeCoefficient(0.3f)
-                ->AddTab(FDialogAssetEditorTabs::AssetInspectorID, ETabState::OpenedTab)
+                ->AddTab(FDialogAssetEditorTabs::GraphDetailsID, ETabState::OpenedTab)
             )
         )
     );
