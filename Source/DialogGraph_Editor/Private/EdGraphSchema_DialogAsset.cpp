@@ -21,14 +21,18 @@
 #include "Templates/SharedPointer.h"
 #include "Templates/SubclassOf.h"
 #include "Textures/SlateIcon.h"
+#include "ToolMenuDelegates.h"
+#include "ToolMenuEntry.h"
 #include "ToolMenuSection.h"
 #include "UObject/Linker.h"
+#include "UObject/ObjectMacros.h"
 #include "UObject/Script.h"
 #include "UObject/UObjectGlobals.h"
 #include "ToolMenu.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "DialogAsset.h"
 #include "UObject/UnrealType.h"
+#include "SGraphActionMenu.h"
 
 namespace
 {
@@ -121,6 +125,12 @@ void FDialogSchemaAction_NewNode::AddReferencedObjects(FReferenceCollector& Coll
 }
 
 
+UEdGraphNode* FDialogSchemaAction_AddCondition::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2f& Location, bool bSelectNewNode)
+{
+    return nullptr;
+}
+
+
 UEdGraphSchema_DialogAsset::UEdGraphSchema_DialogAsset(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 }
@@ -145,10 +155,12 @@ void UEdGraphSchema_DialogAsset::GetGraphContextActions(FGraphContextMenuBuilder
 
         const FString BaseClassName = UDialogAssetGraphNode::StaticClass()->GetName();
         const FString RootClassName = UDialogAssetGraphNode_Root::StaticClass()->GetName();
+        const FString TaskClassName = UDialogAssetGraphNode_Task::StaticClass()->GetName();
         for(auto& NodeClass : NodeClasses)
         {
             if(NodeClass.GetClassName() == BaseClassName) continue;
             if(NodeClass.GetClassName() == RootClassName) continue;
+            if(NodeClass.GetClassName() == TaskClassName) continue;
 
             const FText NodeTypeName = FText::FromString(FName::NameToDisplayString(NodeClass.ToString(), false));
 
@@ -259,9 +271,62 @@ void UEdGraphSchema_DialogAsset::GetContextMenuActions(UToolMenu* Menu, UGraphNo
                 FSlateIcon(FAppStyle::GetAppStyleSetName(), "GenericCommands.Delete"),
                 FUIAction(FExecuteAction::CreateUObject(ChoiceNode, &UDialogAssetGraphNode_Choice::RemovePin, PinToRemove))
                 );
+
+        // Add the condition action submenu with all the conditions into it
+        Section.AddSubMenu(
+                "AddCondition",
+                FText::FromString("Add Condition..."),
+                FText::FromString("Adds new condition to the choice pin"),
+                FNewToolMenuDelegate::CreateUObject(this, &UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu, (UEdGraph*)Context->Graph));
     }
 
     Super::GetContextMenuActions(Menu, Context);
+}
+
+void UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu(UToolMenu* Menu, UEdGraph* Graph) const
+{
+    TSharedRef<SGraphActionMenu> Widget =
+        SNew(SGraphActionMenu)
+        .GraphObj(Graph)
+        .AutoExpandActionMenu(true)
+        .OnCollectAllActions_UObject(this, &UEdGraphSchema_DialogAsset::CollectAllActions, (UEdGraph*)Graph);
+
+    FToolMenuSection& Section = Menu->FindOrAddSection("Section");
+    Section.AddEntry(FToolMenuEntry::InitWidget("ConditionWidget", Widget, FText(), true));
+}
+
+void UEdGraphSchema_DialogAsset::CollectAllActions(FGraphActionListBuilderBase& OutAllActions, UEdGraph* Graph) const
+{
+    // Add the ability to create different task-nodes, one for each function we can find in the registered libraries
+    UDialogAsset* DialogAsset = CastChecked<UDialogAsset>(Graph->GetOuter());
+    for(const TSubclassOf<UDialogGraphFunctionLibrary>& LibraryClass : DialogAsset->RegisteredLibraries)
+    {
+        if(!LibraryClass) continue;
+
+        UClass* Class = LibraryClass.Get();
+
+        for(TFieldIterator<UFunction> FuncIt(Class); FuncIt; ++FuncIt)
+        {
+            UFunction* Function = *FuncIt;
+            if(!Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintPure)) continue;
+
+            bool bReturnsBool = false;
+            for(TFieldIterator<FProperty> PropIt(Function); PropIt; ++PropIt)
+            {
+                FProperty* Property = *PropIt;
+                if(!Property->HasAnyPropertyFlags(CPF_ReturnParm | CPF_OutParm)) continue;
+                if(Property->IsA<FBoolProperty>()) bReturnsBool = true;
+            }
+
+            if(!bReturnsBool) continue;
+
+            TSharedPtr<FDialogSchemaAction_AddCondition> AddConditionAction = TSharedPtr<FDialogSchemaAction_AddCondition>(new FDialogSchemaAction_AddCondition(FText::FromString(""), FText::FromString(FuncIt->GetName()), FuncIt->GetToolTipText(), 0));
+            AddConditionAction->BindedFunctionClass = Class;
+            AddConditionAction->BindedFunctionName = Function->GetFName();
+
+            OutAllActions.AddAction(AddConditionAction);
+        }
+    }
 }
 
 TSharedPtr<FDialogSchemaAction_NewNode> UEdGraphSchema_DialogAsset::AddNewNodeAction(FGraphActionListBuilderBase& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip)
