@@ -24,9 +24,7 @@ FSlateIcon UDialogAssetGraphNode_Task::GetIconAndTint(FLinearColor& OutColor) co
 
 void UDialogAssetGraphNode_Task::ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const
 {
-    RuntimeNode->FunctionClass = BindedFunctionClass;
-    RuntimeNode->FunctionName = BindedFunctionName;
-    RuntimeNode->FunctionProperties = Parameters;
+    RuntimeNode->BindedTaskFunction = TaskFunctionData;
 
     for(const UEdGraphPin* Pin : GetAllPins())
     {
@@ -40,8 +38,8 @@ void UDialogAssetGraphNode_Task::ParseToRuntime(FDialogNode* RuntimeNode, const 
 
 void UDialogAssetGraphNode_Task::SetFunctionData(TObjectPtr<UClass> FunctionClass, FName FunctionName)
 {
-    BindedFunctionClass = FunctionClass;
-    BindedFunctionName = FunctionName;
+    TaskFunctionData.Class = FunctionClass;
+    TaskFunctionData.Name = FunctionName;
 
     UFunction* Function = FunctionClass->FindFunctionByName(FunctionName);
     if(!Function) return;
@@ -57,5 +55,5 @@ void UDialogAssetGraphNode_Task::SetFunctionData(TObjectPtr<UClass> FunctionClas
     }
 
     const UPropertyBag* BagStruct = UPropertyBag::GetOrCreateFromDescs(PropertyBagDescriptions);
-    Parameters.InitializeFromBagStruct(BagStruct);
+    TaskFunctionData.Parameters.InitializeFromBagStruct(BagStruct);
 }

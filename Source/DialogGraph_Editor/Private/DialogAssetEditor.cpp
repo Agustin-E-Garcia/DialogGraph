@@ -270,7 +270,7 @@ void FDialogAssetEditor::OnSelectedNodesChanged(const TSet<class UObject*>& NewS
     UE_LOG(LogTemp, Log, TEXT("NewSelection.Num() = %i"), NewSelection.Num());
 
     if(NewSelection.Num() > 0) DetailsView->SetObjects(NewSelection.Array());
-    else DetailsView->SetObject(nullptr);
+    else DetailsView->SetObject(DialogAsset);
 }
 
 void FDialogAssetEditor::NotifyPostChange(const FPropertyChangedEvent& PropertychangedEvent, FProperty* PropertyThatChanged)

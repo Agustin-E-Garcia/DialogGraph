@@ -5,6 +5,25 @@
 #include "DialogNode.generated.h"
 
 USTRUCT(BlueprintType)
+struct FBindedFunctionData
+{
+    GENERATED_USTRUCT_BODY()
+
+    FBindedFunctionData() {}
+    FBindedFunctionData(TObjectPtr<UClass> InClass, FName InName, FInstancedPropertyBag InParameters)
+        : Class(InClass), Name(InName), Parameters(InParameters) {}
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    TObjectPtr<UClass> Class;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+    FName Name;
+
+    UPROPERTY(EditAnywhere)
+    FInstancedPropertyBag Parameters;
+};
+
+USTRUCT(BlueprintType)
 struct FPinInfo
 {
     GENERATED_USTRUCT_BODY()
@@ -14,6 +33,7 @@ struct FPinInfo
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) int NextID;
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly) FString Title;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FBindedFunctionData> ConditionsData;
 };
 
 UENUM(BlueprintType)
@@ -43,12 +63,6 @@ struct FDialogNode
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
     TArray<FPinInfo> NextIDs;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    TObjectPtr<UClass> FunctionClass;
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    FName FunctionName;
-
-    UPROPERTY(VisibleAnywhere)
-    FInstancedPropertyBag FunctionProperties;
+    UPROPERTY(EditAnywhere)
+    FBindedFunctionData BindedTaskFunction;
 };

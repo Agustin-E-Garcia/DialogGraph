@@ -21,11 +21,14 @@ class DIALOGGRAPH_API UDialogAssetFunctionLibrary : public UBlueprintFunctionLib
 
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetNodeType(const FDialogNode& Node, EDialogNodeType& OutType);
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetLineText(const FDialogNode& Node, FText& OutText);
+
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetChoiceOptions(const FDialogNode& Node, TArray<FPinInfo>& OutOptions);
     UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void GetOptionText(const FPinInfo& Option, FText& OutText);
+    UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Dialog") static void IsAvailable(const FPinInfo& PinInfo, bool& OutIsAvailable);
 
     UFUNCTION(BlueprintCallable, Category = "Dialog", meta = (ExpandEnumAsExecs = "Branches")) static void GetStartingNode(const UDialogAsset* Asset, FDialogNode& OutStartNode, int32& OutStartIndex, EDialogFlowResult& Branches);
     UFUNCTION(BlueprintCallable, Category = "Dialog", meta = (ExpandEnumAsExecs = "Branches", AdvancedDisplay = "ChoiceIndex")) static void AdvanceDialog(const UDialogAsset* Asset, int32 CurrentIndex, int32 ChoiceIndex, FDialogNode& OutNextNode, int32& OutNextIndex, EDialogFlowResult& Branches);
 
-    static void ExecuteTask(const FDialogNode* TaskNode);
+private:
+    static bool ExecuteFunction(const FBindedFunctionData& BindedFunction);
 };

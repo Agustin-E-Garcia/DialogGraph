@@ -1,14 +1,34 @@
 Polish:
-    - Fix undo/redo for every action we have available
-    - Implement Cut, Copy, Paste and Duplicate
-    - Add knot node for rerouting
-    - Add custom tooltips to all graph nodes
+    1 - Add lock image to the condition's UI
+        - If it has conditions, show a closed lock
+        - If it doesn't have conditions, show an open lock
+    2 - Fix Comment node
+    3 - Fix undo/redo for every action we have available
+    4 - Implement Cut, Copy, Paste and Duplicate
+    5 - Add knot node for rerouting
+    6 - Add custom tooltips to all graph nodes
+    7 - Create a custom details panel for the conditions, so we can add / remove / edit conditions
 
-Current:
-    - Saved UClass and FunctionName on Task nodes, learn how to display the parameters
-
-Development:
-    - Add Conditions to dialog branches
-    - Add lock image to the condition's ui (no condition functionality yet)
-    - Add Blackboard functionality from BehaviourTrees into Dialog Graph
+ToDo:
+    1 - Add Conditions to line nodes
+        - If the condition is met the line is executed normally
+        - If the condition is not met, the line is skipped to the next one
+            - In the case the line was the last one in the dialog, the dialog ends
+    2 - Add a context-menu option to mark a task node as editor-only (these don't get saved to the runtime asset)
+    3 - Add another panel with a text parser to create the flow quickly
+        - each line is a new node
+        - a line with no specific marker is a Line node
+        - a line starting with "*" is a Choice node
+        - a line starting with "+" is an option of the last available Choice node
+        - when editing a line, add a dotted selection-like highlight to the node linked to that line
+    4 - Add Blackboard functionality from BehaviourTrees into Dialog Graph
         - Maybe instead of blackboard we can add a Data Table for character data
+            - If so, we can try to add some autocomplete for the text parser
+    5 - Add a selector to each line node allowing to add a sound asset for the voice over
+        - Add a tick option next to the selector to mark if the asset is placeholder (start as true)
+            - Implement another tool that goes over all the Dialog assets in the project and tallies all the sound assets that are marked as placeholders (double click opens the dialog asset in question and selects the corresponding node)
+    6 - Add a new editor mode for editing a level sequence that will play along with the dialog, allowing for camera changes and loading models/textures to execute the animations on.
+
+Maybe?:
+    1 - Add Breakpoints and runtime debug information
+        - Show each condition result on hover

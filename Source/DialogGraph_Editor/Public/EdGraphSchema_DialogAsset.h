@@ -3,6 +3,7 @@
 #include "EdGraph/EdGraphNode.h"
 #include "Framework/Commands/UICommandInfo.h"
 #include "Templates/UnrealTemplate.h"
+#include "Types/SlateEnums.h"
 #include "UObject/Class.h"
 #include "UObject/ObjectMacros.h"
 #include "EdGraph/EdGraphSchema.h"
@@ -85,6 +86,7 @@ protected:
     TSharedPtr<FUICommandInfo> RemovePinCommand;
 
 private:
-    void CreateAddConditionSubMenu(UToolMenu* Menu, UEdGraph* Graph) const;
-    void CollectAllActions(FGraphActionListBuilderBase& OutAllActions, UEdGraph* Graph) const;
+    void CreateAddConditionSubMenu(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const;
+    void CollectAllActions(FGraphActionListBuilderBase& OutAllActions, UGraphNodeContextMenuContext* Context) const;
+    void OnActionSelected(const TArray<TSharedPtr<FEdGraphSchemaAction>>& SelectedAction, ESelectInfo::Type InSelectionType, UGraphNodeContextMenuContext* Context) const;
 };

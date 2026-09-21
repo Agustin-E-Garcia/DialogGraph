@@ -1,10 +1,12 @@
 #include "SGraphPin_DialogGraph.h"
 #include "DialogAssetEditorTypes.h"
+#include "DialogAssetGraphNode_Choice.h"
 #include "GenericPlatform/GenericApplication.h"
 #include "Math/Color.h"
 #include "SGraphPin.h"
 #include "ScopedTransaction.h"
 #include "Styling/AppStyle.h"
+#include "UObject/Linker.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
 #include "Widgets/SBoxPanel.h"
@@ -52,18 +54,24 @@ FSlateColor SGraphPin_DialogGraph::GetPinColor() const
 
 FText SGraphPin_DialogGraph::GetTypeInValue()
 {
-    return GraphPinObj->GetDefaultAsText();
+    UDialogAssetGraphNode_Choice* Node = Cast<UDialogAssetGraphNode_Choice>(GraphPinObj->GetOwningNode());
+    if(!Node) return FText();
+
+    return FText::FromString(Node->GetPinData(GraphPinObj->PinId)->DefaultValue);
 }
 
 void SGraphPin_DialogGraph::SetTypeInValue(const FText& NewTypeInValue, ETextCommit::Type Type)
 {
     if(GraphPinObj->IsPendingKill()) return;
 
-    if(!GraphPinObj->GetDefaultAsText().EqualTo(NewTypeInValue))
+    UDialogAssetGraphNode_Choice* Node = Cast<UDialogAssetGraphNode_Choice>(GraphPinObj->GetOwningNode());
+    if(!Node) return;
+
+    if(!Node->GetPinData(GraphPinObj->PinId)->GetDefaultValueAsText().EqualTo(NewTypeInValue))
     {
         const FScopedTransaction Transaction(FText::FromString("Change Choice Pin Value"));
         GraphPinObj->Modify();
 
-        GraphPinObj->GetSchema()->TrySetDefaultText(*GraphPinObj, NewTypeInValue);
+        Node->SetPinData(GraphPinObj->PinId, NewTypeInValue.ToString());
     }
 }

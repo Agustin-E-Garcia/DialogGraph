@@ -7,9 +7,11 @@
 #include "DialogAssetGraphNode_Root.h"
 #include "DialogAssetGraphNode_Task.h"
 #include "DialogGraphFunctionLibrary.h"
+#include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "EdGraphNode_Comment.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Framework/Commands/UIAction.h"
 #include "GraphEditor.h"
 #include "Internationalization/Text.h"
@@ -24,6 +26,8 @@
 #include "ToolMenuDelegates.h"
 #include "ToolMenuEntry.h"
 #include "ToolMenuSection.h"
+#include "Types/SlateEnums.h"
+#include "Types/SlateVector2.h"
 #include "UObject/Linker.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/Script.h"
@@ -127,6 +131,13 @@ void FDialogSchemaAction_NewNode::AddReferencedObjects(FReferenceCollector& Coll
 
 UEdGraphNode* FDialogSchemaAction_AddCondition::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2f& Location, bool bSelectNewNode)
 {
+    if(!FromPin) return nullptr;
+
+    UDialogAssetGraphNode_Choice* Node = Cast<UDialogAssetGraphNode_Choice>(FromPin->GetOwningNode());
+    if(!Node) return nullptr;
+
+    Node->AddPinCondition(FromPin->PinId, BindedFunctionClass, BindedFunctionName);
+
     return nullptr;
 }
 
@@ -277,28 +288,29 @@ void UEdGraphSchema_DialogAsset::GetContextMenuActions(UToolMenu* Menu, UGraphNo
                 "AddCondition",
                 FText::FromString("Add Condition..."),
                 FText::FromString("Adds new condition to the choice pin"),
-                FNewToolMenuDelegate::CreateUObject(this, &UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu, (UEdGraph*)Context->Graph));
+                FNewToolMenuDelegate::CreateUObject(this, &UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu, Context));
     }
 
     Super::GetContextMenuActions(Menu, Context);
 }
 
-void UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu(UToolMenu* Menu, UEdGraph* Graph) const
+void UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
 {
     TSharedRef<SGraphActionMenu> Widget =
         SNew(SGraphActionMenu)
-        .GraphObj(Graph)
+        .GraphObj((UEdGraph*)Context->Graph)
         .AutoExpandActionMenu(true)
-        .OnCollectAllActions_UObject(this, &UEdGraphSchema_DialogAsset::CollectAllActions, (UEdGraph*)Graph);
+        .OnActionSelected_UObject(this, &UEdGraphSchema_DialogAsset::OnActionSelected, Context)
+        .OnCollectAllActions_UObject(this, &UEdGraphSchema_DialogAsset::CollectAllActions, Context);
 
     FToolMenuSection& Section = Menu->FindOrAddSection("Section");
     Section.AddEntry(FToolMenuEntry::InitWidget("ConditionWidget", Widget, FText(), true));
 }
 
-void UEdGraphSchema_DialogAsset::CollectAllActions(FGraphActionListBuilderBase& OutAllActions, UEdGraph* Graph) const
+void UEdGraphSchema_DialogAsset::CollectAllActions(FGraphActionListBuilderBase& OutAllActions, UGraphNodeContextMenuContext* Context) const
 {
     // Add the ability to create different task-nodes, one for each function we can find in the registered libraries
-    UDialogAsset* DialogAsset = CastChecked<UDialogAsset>(Graph->GetOuter());
+    UDialogAsset* DialogAsset = CastChecked<UDialogAsset>(Context->Graph->GetOuter());
     for(const TSubclassOf<UDialogGraphFunctionLibrary>& LibraryClass : DialogAsset->RegisteredLibraries)
     {
         if(!LibraryClass) continue;
@@ -325,6 +337,33 @@ void UEdGraphSchema_DialogAsset::CollectAllActions(FGraphActionListBuilderBase& 
             AddConditionAction->BindedFunctionName = Function->GetFName();
 
             OutAllActions.AddAction(AddConditionAction);
+        }
+    }
+}
+
+void UEdGraphSchema_DialogAsset::OnActionSelected(const TArray<TSharedPtr<FEdGraphSchemaAction>>& SelectedAction, ESelectInfo::Type InSelectionType, UGraphNodeContextMenuContext* Context) const
+{
+    if(InSelectionType == ESelectInfo::OnMouseClick || InSelectionType == ESelectInfo::OnKeyPress || SelectedAction.Num() == 0)
+    {
+        bool bDoDismissMenus = false;
+
+        if(Context->Graph)
+        {
+            for (int32 ActionIndex = 0; ActionIndex < SelectedAction.Num(); ActionIndex++)
+            {
+                TSharedPtr<FEdGraphSchemaAction> CurrentAction = SelectedAction[ActionIndex];
+
+                if(CurrentAction.IsValid())
+                {
+                    CurrentAction->PerformAction(const_cast<UEdGraph*>(Context->Graph.Get()), const_cast<UEdGraphPin*>(Context->Pin), UE::Slate::CastToVector2f(FVector2D::ZeroVector));
+                    bDoDismissMenus = true;
+                }
+            }
+        }
+
+        if(bDoDismissMenus)
+        {
+            FSlateApplication::Get().DismissAllMenus();
         }
     }
 }

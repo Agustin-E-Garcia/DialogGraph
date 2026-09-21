@@ -1,8 +1,11 @@
 #include "DialogAssetFunctionLibrary.h"
 #include "DialogAsset.h"
 #include "DialogNode.h"
+#include "Logging/LogMacros.h"
 #include "StructUtils/PropertyBag.h"
+#include "UObject/ObjectMacros.h"
 #include "UObject/StructOnScope.h"
+#include "UObject/UnrealType.h"
 
 void UDialogAssetFunctionLibrary::GetNodeType(const FDialogNode& Node, EDialogNodeType& OutType)
 {
@@ -16,6 +19,19 @@ void UDialogAssetFunctionLibrary::GetLineText(const FDialogNode& Node, FText& Ou
 
 void UDialogAssetFunctionLibrary::GetChoiceOptions(const FDialogNode& Node, TArray<FPinInfo>& OutOptions) { OutOptions = Node.NextIDs; }
 void UDialogAssetFunctionLibrary::GetOptionText(const FPinInfo& Option, FText& OutText) { OutText = FText::FromString(Option.Title); }
+
+void UDialogAssetFunctionLibrary::IsAvailable(const FPinInfo& PinInfo, bool& OutIsAvailable)
+{
+    OutIsAvailable = true;
+    for(const FBindedFunctionData& Condition : PinInfo.ConditionsData)
+    {
+        if(!ExecuteFunction(Condition))
+        {
+            OutIsAvailable = false;
+            break;
+        }
+    }
+}
 
 void UDialogAssetFunctionLibrary::GetStartingNode(const UDialogAsset* Asset, FDialogNode& OutStartNode, int32& OutStartIndex, EDialogFlowResult& Branches)
 {
@@ -51,7 +67,7 @@ void UDialogAssetFunctionLibrary::AdvanceDialog(const UDialogAsset* Asset, int32
 
     while(NextNode->NodeType == EDialogNodeType::Task)
     {
-        ExecuteTask(NextNode);
+        ExecuteFunction(NextNode->BindedTaskFunction);
 
         NextID = NextNode->NextIDs[0].NextID;
         if(NextID == -1)
@@ -69,21 +85,24 @@ void UDialogAssetFunctionLibrary::AdvanceDialog(const UDialogAsset* Asset, int32
     Branches = EDialogFlowResult::HasNext;
 }
 
-void UDialogAssetFunctionLibrary::ExecuteTask(const FDialogNode* TaskNode)
+bool UDialogAssetFunctionLibrary::ExecuteFunction(const FBindedFunctionData& BindedFunction)
 {
-    UFunction* Function = TaskNode->FunctionClass->FindFunctionByName(TaskNode->FunctionName);
+    UE_LOG(LogTemp, Log, TEXT("ExecuteFunction::%s"), *BindedFunction.Name.ToString());
+
+    UFunction* Function = BindedFunction.Class->FindFunctionByName(BindedFunction.Name);
     UObject* Target = Function->GetOuterUClass()->GetDefaultObject();
     if(Function->NumParms == 0)
     {
         Target->ProcessEvent(Function, nullptr);
-        return;
+        UE_LOG(LogTemp, Log, TEXT("ExecuteFunction::%s - No Parameter execution"), *BindedFunction.Name.ToString());
+        return false;
     }
 
     FStructOnScope FuncParams(Function);
     uint8* Params = FuncParams.GetStructMemory();
 
-    const UPropertyBag* BagStruct = TaskNode->FunctionProperties.GetPropertyBagStruct();
-    const uint8* BagMemory = TaskNode->FunctionProperties.GetValue().GetMemory();
+    const UPropertyBag* BagStruct = BindedFunction.Parameters.GetPropertyBagStruct();
+    const uint8* BagMemory = BindedFunction.Parameters.GetValue().GetMemory();
 
     for(const FPropertyBagPropertyDesc& Desc : BagStruct->GetPropertyDescs())
     {
@@ -97,4 +116,20 @@ void UDialogAssetFunctionLibrary::ExecuteTask(const FDialogNode* TaskNode)
     }
 
     Target->ProcessEvent(Function, Params);
+    UE_LOG(LogTemp, Log, TEXT("ExecuteFunction::%s - Parameter execution"), *BindedFunction.Name.ToString());
+
+    for(TFieldIterator<FProperty> It(Function); It; ++It)
+    {
+        if(It->HasAnyPropertyFlags(CPF_OutParm | CPF_ReturnParm))
+        {
+            if(const FBoolProperty* BoolProp = CastField<FBoolProperty>(*It))
+            {
+                bool result = BoolProp->GetPropertyValue_InContainer(Params);
+                UE_LOG(LogTemp, Log, TEXT("ExecuteFunction::%s - Returned: %i"), *BindedFunction.Name.ToString(), result);
+                return result;
+            }
+        }
+    }
+
+    return false;
 }
