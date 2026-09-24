@@ -22,7 +22,14 @@ public:
     FText GetDialogLine() const { return DialogLine; }
     void SetDialogLine(const FText& InDialogLine) { DialogLine = InDialogLine; }
 
+    void AddCondition(TObjectPtr<UClass> InClass, FName InName);
+
+    bool HasConditions() { return !Conditions.IsEmpty(); }
+
 private:
     UPROPERTY(EditAnywhere)
     FText DialogLine;
+
+    UPROPERTY(EditAnywhere)
+    TArray<FBindedFunctionData> Conditions;
 };

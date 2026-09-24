@@ -1,4 +1,5 @@
 #include "SGraphNode_DialogGraph.h"
+#include "DialogAssetGraphNode.h"
 #include "DialogAssetGraphNode_Choice.h"
 #include "DialogAssetGraphNode_Line.h"
 #include "EdGraph/EdGraphNode.h"
@@ -10,10 +11,15 @@
 #include "Widgets/SBoxPanel.h"
 #include "ScopedTransaction.h"
 #include "EdGraph/EdGraph.h"
+#include "Widgets/Images/SImage.h"
 
 void SGraphNode_DialogGraph::Construct(const FArguments& InArgs, UEdGraphNode* inNode)
 {
     GraphNode = inNode;
+
+    UDialogAssetGraphNode* DialogNode = Cast<UDialogAssetGraphNode>(inNode);
+    if(DialogNode) DialogNode->SetVisualGraphNode(this);
+
     UpdateGraphNode();
 }
 
@@ -26,10 +32,10 @@ TSharedRef<SWidget> SGraphNode_DialogGraph::CreateNodeContentArea()
     }
 
     return SNew(SBorder)
-        .BorderImage( FAppStyle::GetBrush("NoBorder") )
+        .BorderImage(FAppStyle::GetBrush("NoBorder"))
         .HAlign(HAlign_Fill)
         .VAlign(VAlign_Fill)
-        .Padding( FMargin(0,3) )
+        .Padding(FMargin(0,3))
         [
             SNew(SHorizontalBox)
             +SHorizontalBox::Slot()
@@ -38,6 +44,13 @@ TSharedRef<SWidget> SGraphNode_DialogGraph::CreateNodeContentArea()
             [
                 // LEFT
                 SAssignNew(LeftNodeBox, SVerticalBox)
+            ]
+            +SHorizontalBox::Slot()
+            .AutoWidth()
+            .VAlign(VAlign_Center)
+            [
+                SNew(SImage)
+                .Image(GetConditionLockImage())
             ]
             +SHorizontalBox::Slot()
             .AutoWidth()
@@ -107,4 +120,12 @@ void SGraphNode_DialogGraph::OnTextCommited(const FText& InText, ETextCommit::Ty
 
         GraphNode_Line->SetDialogLine(InText);
     }
+}
+
+const FSlateBrush* SGraphNode_DialogGraph::GetConditionLockImage()
+{
+    UDialogAssetGraphNode_Line* Node = Cast<UDialogAssetGraphNode_Line>(GraphNode);
+
+    const bool bHasConditions = Node && Node->HasConditions();
+    return FAppStyle::GetBrush(bHasConditions ? "Sequencer.LockSequence" : "Sequencer.UnlockSequence");
 }

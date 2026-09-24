@@ -29,6 +29,7 @@ TSharedRef<SWidget> SGraphPin_DialogGraph::GetLabelWidget(const FName& InPinLabe
             .Padding(5.0f)
             [
                 SNew(SImage)
+                .Image(GetConditionLockImage())
             ]
             +SHorizontalBox::Slot()
             .AutoWidth()
@@ -74,4 +75,13 @@ void SGraphPin_DialogGraph::SetTypeInValue(const FText& NewTypeInValue, ETextCom
 
         Node->SetPinData(GraphPinObj->PinId, NewTypeInValue.ToString());
     }
+}
+
+const FSlateBrush* SGraphPin_DialogGraph::GetConditionLockImage()
+{
+    UDialogAssetGraphNode_Choice* Node = Cast<UDialogAssetGraphNode_Choice>(GraphPinObj->GetOwningNode());
+    const FChoicePinData* PinData = Node ? Node->GetPinData(GraphPinObj->PinId) : nullptr;
+
+    const bool bHasConditions = PinData && PinData->Conditions.Num() > 0;
+    return FAppStyle::GetBrush(bHasConditions ? "Sequencer.LockSequence" : "Sequencer.UnlockSequence");
 }

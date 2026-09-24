@@ -27,3 +27,22 @@ void UDialogAssetGraphNode::GetNodeContextMenuActions(class UToolMenu* Menu, cla
 }
 
 bool UDialogAssetGraphNode::CanUserDeleteNode() const { return true; }
+
+void UDialogAssetGraphNode::InitializeBindedFunction(FBindedFunctionData& FunctionData)
+{
+    UFunction* Function = FunctionData.Class->FindFunctionByName(FunctionData.Name);
+    if(!Function) return;
+
+    TArray<FPropertyBagPropertyDesc> PropertyBagDescriptions;
+    for(TFieldIterator<FProperty> ParamIt(Function); ParamIt; ++ParamIt)
+    {
+        FProperty* Param = *ParamIt;
+        if (!Param->HasAnyPropertyFlags(CPF_Parm)) continue;
+        if (Param->HasAnyPropertyFlags(CPF_ReturnParm | CPF_OutParm)) continue;
+
+        PropertyBagDescriptions.Add(FPropertyBagPropertyDesc(Param->GetFName(), Param));
+    }
+
+    const UPropertyBag* BagStruct = UPropertyBag::GetOrCreateFromDescs(PropertyBagDescriptions);
+    FunctionData.Parameters.InitializeFromBagStruct(BagStruct);
+}

@@ -6,6 +6,7 @@
 #include "Styling/AppStyle.h"
 #include "ScopedTransaction.h"
 #include "EdGraph/EdGraph.h"
+#include "SGraphNode.h"
 
 UDialogAssetGraphNode_Choice::UDialogAssetGraphNode_Choice(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -68,22 +69,12 @@ void UDialogAssetGraphNode_Choice::AddPinCondition(const FGuid PinID, TObjectPtr
     Data.Class = InClass;
     Data.Name = InName;
 
-    UFunction* Function = InClass->FindFunctionByName(InName);
-    if(!Function) return;
+    InitializeBindedFunction(Data);
 
-    TArray<FPropertyBagPropertyDesc> PropertyBagDescriptions;
-    for(TFieldIterator<FProperty> ParamIt(Function); ParamIt; ++ParamIt)
-    {
-        FProperty* Param = *ParamIt;
-        if (!Param->HasAnyPropertyFlags(CPF_Parm)) continue;
-        if (Param->HasAnyPropertyFlags(CPF_ReturnParm | CPF_OutParm)) continue;
-
-        PropertyBagDescriptions.Add(FPropertyBagPropertyDesc(Param->GetFName(), Param));
-    }
-
-    const UPropertyBag* BagStruct = UPropertyBag::GetOrCreateFromDescs(PropertyBagDescriptions);
-    Data.Parameters.InitializeFromBagStruct(BagStruct);
+    if(VisualGraphNode) VisualGraphNode->UpdateGraphNode();
 }
+
+//TODO Implement RemovePinCondition
 
 void UDialogAssetGraphNode_Choice::AddPin()
 {

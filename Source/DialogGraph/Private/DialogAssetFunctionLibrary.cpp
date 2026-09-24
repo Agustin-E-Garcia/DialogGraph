@@ -53,7 +53,6 @@ void UDialogAssetFunctionLibrary::GetStartingNode(const UDialogAsset* Asset, FDi
 void UDialogAssetFunctionLibrary::AdvanceDialog(const UDialogAsset* Asset, int32 CurrentIndex, int32 ChoiceIndex, FDialogNode& OutNextNode, int32& OutNextIndex, EDialogFlowResult& Branches)
 {
     const FDialogNode& current = *Asset->GetNode(CurrentIndex);
-
     int32 NextID = current.NextIDs[ChoiceIndex].NextID;
 
     if (NextID == -1)
@@ -63,7 +62,20 @@ void UDialogAssetFunctionLibrary::AdvanceDialog(const UDialogAsset* Asset, int32
         return;
     }
 
+    // TODO unify both while loops, as they basically do the same thing
     const FDialogNode* NextNode = Asset->GetNode(NextID);
+    while(NextNode->NodeType == EDialogNodeType::Line && !IsAvailable(NextNode->NextIDs[0]))
+    {
+        NextID = NextNode->NextIDs[0].NextID;
+        if(NextID == -1)
+        {
+            Branches = EDialogFlowResult::End;
+            OutNextIndex = -1;
+            return;
+        }
+
+        NextNode = Asset->GetNode(NextID);
+    }
 
     while(NextNode->NodeType == EDialogNodeType::Task)
     {
@@ -132,4 +144,11 @@ bool UDialogAssetFunctionLibrary::ExecuteFunction(const FBindedFunctionData& Bin
     }
 
     return false;
+}
+
+bool UDialogAssetFunctionLibrary::IsAvailable(const FPinInfo& PinInfo)
+{
+    bool result;
+    IsAvailable(PinInfo, result);
+    return result;
 }

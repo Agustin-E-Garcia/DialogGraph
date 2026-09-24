@@ -24,4 +24,11 @@ public:
     //~ End UEdGraphNode Interface
 
     virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const {}
+
+    void SetVisualGraphNode(SGraphNode* GraphNode) { VisualGraphNode = GraphNode; }
+
+protected:
+    SGraphNode* VisualGraphNode = nullptr;
+
+    void InitializeBindedFunction(FBindedFunctionData& FunctionData);
 };

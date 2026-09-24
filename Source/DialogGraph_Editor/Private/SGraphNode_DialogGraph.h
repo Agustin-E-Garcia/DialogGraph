@@ -24,4 +24,5 @@ protected:
     //~ End SGraphNode Interface
 
     void OnTextCommited(const FText& InText, ETextCommit::Type Type);
+    const FSlateBrush* GetConditionLockImage();
 };

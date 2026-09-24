@@ -1,13 +1,13 @@
 Polish:
-    1 - Add lock image to the condition's UI
-        - If it has conditions, show a closed lock
-        - If it doesn't have conditions, show an open lock
-    2 - Fix Comment node
-    3 - Fix undo/redo for every action we have available
-    4 - Implement Cut, Copy, Paste and Duplicate
-    5 - Add knot node for rerouting
-    6 - Add custom tooltips to all graph nodes
-    7 - Create a custom details panel for the conditions, so we can add / remove / edit conditions
+    1 - Fix Comment node
+    2 - Fix undo/redo for every action we have available
+    3 - Implement Cut, Copy, Paste and Duplicate
+    4 - Add knot node for rerouting
+    5 - Add custom tooltips to all graph nodes
+    6 - Create a custom details panel for the conditions, so we can add / remove / edit conditions
+
+Development:
+    1 - Add RemovePinCondition menu on choice pins (will need to extend to Line nodes later)
 
 ToDo:
     1 - Add Conditions to line nodes

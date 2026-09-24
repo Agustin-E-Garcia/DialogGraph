@@ -3,6 +3,7 @@
 #include "Textures/SlateIcon.h"
 #include "Styling/AppStyle.h"
 #include "EdGraph/EdGraphPin.h"
+#include "SGraphNode.h"
 
 UDialogAssetGraphNode_Line::UDialogAssetGraphNode_Line(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -22,8 +23,20 @@ void UDialogAssetGraphNode_Line::ParseToRuntime(FDialogNode* RuntimeNode, const 
 
         FPinInfo& info = RuntimeNode->NextIDs.AddDefaulted_GetRef();
         info.Title = GetDialogLine().ToString();
+        info.ConditionsData = Conditions;
 
         if(!Pin->HasAnyConnections()) info.NextID = -1;
         else info.NextID = *GuidToIndex.Find(Pin->LinkedTo[0]->GetOwningNode()->NodeGuid);
     }
+}
+
+void UDialogAssetGraphNode_Line::AddCondition(TObjectPtr<UClass> InClass, FName InName)
+{
+    FBindedFunctionData& Data = Conditions.AddDefaulted_GetRef();
+    Data.Class = InClass;
+    Data.Name = InName;
+
+    InitializeBindedFunction(Data);
+
+    if(VisualGraphNode) VisualGraphNode->UpdateGraphNode();
 }

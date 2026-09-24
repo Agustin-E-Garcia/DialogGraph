@@ -30,5 +30,6 @@ class DIALOGGRAPH_API UDialogAssetFunctionLibrary : public UBlueprintFunctionLib
     UFUNCTION(BlueprintCallable, Category = "Dialog", meta = (ExpandEnumAsExecs = "Branches", AdvancedDisplay = "ChoiceIndex")) static void AdvanceDialog(const UDialogAsset* Asset, int32 CurrentIndex, int32 ChoiceIndex, FDialogNode& OutNextNode, int32& OutNextIndex, EDialogFlowResult& Branches);
 
 private:
+    static bool IsAvailable(const FPinInfo& PinInfo);
     static bool ExecuteFunction(const FBindedFunctionData& BindedFunction);
 };

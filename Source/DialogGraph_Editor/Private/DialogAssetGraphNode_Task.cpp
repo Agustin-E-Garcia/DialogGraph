@@ -41,19 +41,5 @@ void UDialogAssetGraphNode_Task::SetFunctionData(TObjectPtr<UClass> FunctionClas
     TaskFunctionData.Class = FunctionClass;
     TaskFunctionData.Name = FunctionName;
 
-    UFunction* Function = FunctionClass->FindFunctionByName(FunctionName);
-    if(!Function) return;
-
-    TArray<FPropertyBagPropertyDesc> PropertyBagDescriptions;
-    for(TFieldIterator<FProperty> ParamIt(Function); ParamIt; ++ParamIt)
-    {
-        FProperty* Param = *ParamIt;
-        if (!Param->HasAnyPropertyFlags(CPF_Parm)) continue;
-        if (Param->HasAnyPropertyFlags(CPF_ReturnParm | CPF_OutParm)) continue;
-
-        PropertyBagDescriptions.Add(FPropertyBagPropertyDesc(Param->GetFName(), Param));
-    }
-
-    const UPropertyBag* BagStruct = UPropertyBag::GetOrCreateFromDescs(PropertyBagDescriptions);
-    TaskFunctionData.Parameters.InitializeFromBagStruct(BagStruct);
+    InitializeBindedFunction(TaskFunctionData);
 }

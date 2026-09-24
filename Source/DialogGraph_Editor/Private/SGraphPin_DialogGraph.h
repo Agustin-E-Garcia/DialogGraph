@@ -20,4 +20,5 @@ public:
 
     FText GetTypeInValue();
     void SetTypeInValue(const FText& NewTypeInValue, ETextCommit::Type Type);
+    const FSlateBrush* GetConditionLockImage();
 };

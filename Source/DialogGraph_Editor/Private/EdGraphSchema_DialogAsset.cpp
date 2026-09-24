@@ -4,6 +4,7 @@
 #include "DialogAssetGraph.h"
 #include "DialogAssetGraphNode.h"
 #include "DialogAssetGraphNode_Choice.h"
+#include "DialogAssetGraphNode_Line.h"
 #include "DialogAssetGraphNode_Root.h"
 #include "DialogAssetGraphNode_Task.h"
 #include "DialogGraphFunctionLibrary.h"
@@ -133,10 +134,12 @@ UEdGraphNode* FDialogSchemaAction_AddCondition::PerformAction(class UEdGraph* Pa
 {
     if(!FromPin) return nullptr;
 
-    UDialogAssetGraphNode_Choice* Node = Cast<UDialogAssetGraphNode_Choice>(FromPin->GetOwningNode());
-    if(!Node) return nullptr;
+    UDialogAssetGraphNode_Choice* ChoiceNode = Cast<UDialogAssetGraphNode_Choice>(FromPin->GetOwningNode());
+    UDialogAssetGraphNode_Line* LineNode = Cast<UDialogAssetGraphNode_Line>(FromPin->GetOwningNode());
+    if(!ChoiceNode && !LineNode) return nullptr;
 
-    Node->AddPinCondition(FromPin->PinId, BindedFunctionClass, BindedFunctionName);
+    if(ChoiceNode) ChoiceNode->AddPinCondition(FromPin->PinId, BindedFunctionClass, BindedFunctionName);
+    else if(LineNode) LineNode->AddCondition(BindedFunctionClass, BindedFunctionName);
 
     return nullptr;
 }
@@ -268,7 +271,9 @@ void UEdGraphSchema_DialogAsset::GetContextMenuActions(UToolMenu* Menu, UGraphNo
         Section.AddMenuEntry(FGenericCommands::Get().Duplicate);
     }
 
-    if(Context->Pin && Context->Pin->PinType.PinSubCategory == UDialogAssetEditorTypes::PinSubCategory_ChoiceNode)
+    bool IsValidPin = Context->Pin && Context->Pin->PinType.PinSubCategory == UDialogAssetEditorTypes::PinSubCategory_ChoiceNode;
+    bool IsValidNode = Context->Node && Cast<UDialogAssetGraphNode_Line>(Context->Node);
+    if(IsValidPin)
     {
         FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaPinActions", FText::FromString("Branch Pin Actions"));
 
@@ -282,13 +287,24 @@ void UEdGraphSchema_DialogAsset::GetContextMenuActions(UToolMenu* Menu, UGraphNo
                 FSlateIcon(FAppStyle::GetAppStyleSetName(), "GenericCommands.Delete"),
                 FUIAction(FExecuteAction::CreateUObject(ChoiceNode, &UDialogAssetGraphNode_Choice::RemovePin, PinToRemove))
                 );
+    }
+
+    if(IsValidPin || IsValidNode)
+    {
+        FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaConditions", FText::FromString("Dialog Conditions"));
+
+        if(IsValidNode && !IsValidPin)
+        {
+            Context->Pin = Context->Node->Pins[0];
+        }
 
         // Add the condition action submenu with all the conditions into it
         Section.AddSubMenu(
                 "AddCondition",
                 FText::FromString("Add Condition..."),
-                FText::FromString("Adds new condition to the choice pin"),
+                FText::FromString("Adds new condition to the choice pin or line node"),
                 FNewToolMenuDelegate::CreateUObject(this, &UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu, Context));
+
     }
 
     Super::GetContextMenuActions(Menu, Context);
