@@ -3,7 +3,6 @@
 #include "Textures/SlateIcon.h"
 #include "Styling/AppStyle.h"
 #include "EdGraph/EdGraphPin.h"
-#include "SGraphNode.h"
 
 UDialogAssetGraphNode_Line::UDialogAssetGraphNode_Line(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -17,7 +16,7 @@ FSlateIcon UDialogAssetGraphNode_Line::GetIconAndTint(FLinearColor& OutColor) co
 
 void UDialogAssetGraphNode_Line::ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const
 {
-    for(const UEdGraphPin* Pin : GetAllPins())
+    /*for(const UEdGraphPin* Pin : GetAllPins())
     {
         if(Pin->Direction != EEdGraphPinDirection::EGPD_Output) continue;
 
@@ -27,16 +26,7 @@ void UDialogAssetGraphNode_Line::ParseToRuntime(FDialogNode* RuntimeNode, const 
 
         if(!Pin->HasAnyConnections()) info.NextID = -1;
         else info.NextID = *GuidToIndex.Find(Pin->LinkedTo[0]->GetOwningNode()->NodeGuid);
-    }
+    }*/
 }
 
-void UDialogAssetGraphNode_Line::AddCondition(TObjectPtr<UClass> InClass, FName InName)
-{
-    FBindedFunctionData& Data = Conditions.AddDefaulted_GetRef();
-    Data.Class = InClass;
-    Data.Name = InName;
 
-    InitializeBindedFunction(Data);
-
-    if(VisualGraphNode) VisualGraphNode->UpdateGraphNode();
-}

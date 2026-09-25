@@ -76,9 +76,10 @@ public:
     virtual void GetGraphContextActions(FGraphContextMenuBuilder& contextMenuBuilder) const override;
     virtual void GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const override;
     virtual const FPinConnectionResponse CanCreateConnection(const UEdGraphPin* a, const UEdGraphPin* b) const override;
+    virtual FConnectionDrawingPolicy* CreateConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float InZoomFactor, const FSlateRect& InClippingRect, class FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const override;
     //~ End UEdGraphSchema Interface
 
-    static TSharedPtr<FDialogSchemaAction_NewNode> AddNewNodeAction(FGraphActionListBuilderBase& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip);
+    static TSharedPtr<FDialogSchemaAction_NewNode> AddNewNodeAction(FGraphActionListBuilderBase& ContextMenuBuilder, const UClass* Class, const FText& Category = FText(), const FText& MenuDesc = FText(), const FText& Tooltip = FText());
 
 protected:
     virtual FGraphNodeClassHelper& GetClassCache() const;

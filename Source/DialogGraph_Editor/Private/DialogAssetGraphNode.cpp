@@ -1,5 +1,6 @@
 #include "DialogAssetGraphNode.h"
 #include "DialogAssetEditorTypes.h"
+#include "SGraphNode.h"
 
 UDialogAssetGraphNode::UDialogAssetGraphNode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -27,6 +28,17 @@ void UDialogAssetGraphNode::GetNodeContextMenuActions(class UToolMenu* Menu, cla
 }
 
 bool UDialogAssetGraphNode::CanUserDeleteNode() const { return true; }
+
+void UDialogAssetGraphNode::AddCondition(TObjectPtr<UClass> InClass, FName InName)
+{
+    FBindedFunctionData& Data = Conditions.AddDefaulted_GetRef();
+    Data.Class = InClass;
+    Data.Name = InName;
+
+    InitializeBindedFunction(Data);
+
+    if(VisualGraphNode) VisualGraphNode->UpdateGraphNode();
+}
 
 void UDialogAssetGraphNode::InitializeBindedFunction(FBindedFunctionData& FunctionData)
 {

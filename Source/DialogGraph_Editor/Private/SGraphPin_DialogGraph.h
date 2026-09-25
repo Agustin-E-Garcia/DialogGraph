@@ -14,11 +14,14 @@ public:
     void Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinObj);
 
     //~ Begin SGraphPin interface
-    TSharedRef<SWidget> GetLabelWidget(const FName& InPinLabelStyle) override;
+    virtual const FSlateBrush* GetPinIcon() const override;
     virtual FSlateColor GetPinColor() const override;
     //~ End SGraphPin interface
 
-    FText GetTypeInValue();
-    void SetTypeInValue(const FText& NewTypeInValue, ETextCommit::Type Type);
-    const FSlateBrush* GetConditionLockImage();
+    const FSlateBrush* GetPinBorder() const;
+    FSlateColor GetPinBorderColor() const;
+
+    //FText GetTypeInValue();
+    //void SetTypeInValue(const FText& NewTypeInValue, ETextCommit::Type Type);
+    //const FSlateBrush* GetConditionLockImage();
 };

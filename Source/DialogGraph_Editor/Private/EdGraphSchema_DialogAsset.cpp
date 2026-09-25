@@ -3,10 +3,12 @@
 #include "DialogAssetEditorTypes.h"
 #include "DialogAssetGraph.h"
 #include "DialogAssetGraphNode.h"
+#include "DialogAssetGraphNode_Prompt.h"
 #include "DialogAssetGraphNode_Choice.h"
 #include "DialogAssetGraphNode_Line.h"
 #include "DialogAssetGraphNode_Root.h"
 #include "DialogAssetGraphNode_Task.h"
+#include "DialogGraphConnectionDrawingPolicy.h"
 #include "DialogGraphFunctionLibrary.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphPin.h"
@@ -38,6 +40,7 @@
 #include "DialogAsset.h"
 #include "UObject/UnrealType.h"
 #include "SGraphActionMenu.h"
+#include "ObjectEditorUtils.h"
 
 namespace
 {
@@ -134,12 +137,8 @@ UEdGraphNode* FDialogSchemaAction_AddCondition::PerformAction(class UEdGraph* Pa
 {
     if(!FromPin) return nullptr;
 
-    UDialogAssetGraphNode_Choice* ChoiceNode = Cast<UDialogAssetGraphNode_Choice>(FromPin->GetOwningNode());
-    UDialogAssetGraphNode_Line* LineNode = Cast<UDialogAssetGraphNode_Line>(FromPin->GetOwningNode());
-    if(!ChoiceNode && !LineNode) return nullptr;
-
-    if(ChoiceNode) ChoiceNode->AddPinCondition(FromPin->PinId, BindedFunctionClass, BindedFunctionName);
-    else if(LineNode) LineNode->AddCondition(BindedFunctionClass, BindedFunctionName);
+    UDialogAssetGraphNode* DialogNode = Cast<UDialogAssetGraphNode>(FromPin->GetOwningNode());
+    if(DialogNode) DialogNode->AddCondition(BindedFunctionClass, BindedFunctionName);
 
     return nullptr;
 }
@@ -159,30 +158,16 @@ void UEdGraphSchema_DialogAsset::CreateDefaultNodesForGraph(UEdGraph& Graph) con
 
 void UEdGraphSchema_DialogAsset::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
-    FGraphNodeClassHelper& ClassCache = GetClassCache();
     FCategorizedGraphActionListBuilder NodesBuilder(TEXT("Nodes"));
+    NodesBuilder.OwnerOfTemporaries = ContextMenuBuilder.OwnerOfTemporaries;
 
     // Add the ability to create different dialog-related nodes to the context menu
     {
-        TArray<FGraphNodeClassData> NodeClasses;
-        ClassCache.GatherClasses(UDialogAssetGraphNode::StaticClass(), NodeClasses);
+        UEdGraphSchema_DialogAsset::AddNewNodeAction(NodesBuilder, UDialogAssetGraphNode_Choice::StaticClass());
+        if(ContextMenuBuilder.FromPin && Cast<UDialogAssetGraphNode_Prompt>(ContextMenuBuilder.FromPin->GetOwningNode())) return;
 
-        const FString BaseClassName = UDialogAssetGraphNode::StaticClass()->GetName();
-        const FString RootClassName = UDialogAssetGraphNode_Root::StaticClass()->GetName();
-        const FString TaskClassName = UDialogAssetGraphNode_Task::StaticClass()->GetName();
-        for(auto& NodeClass : NodeClasses)
-        {
-            if(NodeClass.GetClassName() == BaseClassName) continue;
-            if(NodeClass.GetClassName() == RootClassName) continue;
-            if(NodeClass.GetClassName() == TaskClassName) continue;
-
-            const FText NodeTypeName = FText::FromString(FName::NameToDisplayString(NodeClass.ToString(), false));
-
-            TSharedPtr<FDialogSchemaAction_NewNode> AddOpAction = UEdGraphSchema_DialogAsset::AddNewNodeAction(NodesBuilder, NodeClass.GetCategory(), NodeTypeName, NodeClass.GetTooltip());
-
-            UDialogAssetGraphNode* OpNode = NewObject<UDialogAssetGraphNode>(ContextMenuBuilder.OwnerOfTemporaries, NodeClass.GetClass());
-            AddOpAction->NodeTemplate = OpNode;
-        }
+        UEdGraphSchema_DialogAsset::AddNewNodeAction(NodesBuilder, UDialogAssetGraphNode_Line::StaticClass());
+        UEdGraphSchema_DialogAsset::AddNewNodeAction(NodesBuilder, UDialogAssetGraphNode_Prompt::StaticClass());
         ContextMenuBuilder.Append(NodesBuilder);
     }
 
@@ -202,11 +187,10 @@ void UEdGraphSchema_DialogAsset::GetGraphContextActions(FGraphContextMenuBuilder
                 UFunction* Function = *FuncIt;
                 if(!Function->HasAnyFunctionFlags(FUNC_BlueprintCallable | FUNC_BlueprintPure)) continue;
 
-                TSharedPtr<FDialogSchemaAction_NewNode> AddTaskAction = UEdGraphSchema_DialogAsset::AddNewNodeAction(TasksBuilder, FText::FromString(""), FText::FromString(FuncIt->GetName()), FuncIt->GetToolTipText());
+                TSharedPtr<FDialogSchemaAction_NewNode> AddTaskAction = UEdGraphSchema_DialogAsset::AddNewNodeAction(TasksBuilder, UDialogAssetGraphNode_Task::StaticClass(), FText(), FText::FromString(FuncIt->GetName()), FuncIt->GetToolTipText());
 
-                UDialogAssetGraphNode_Task* TaskNode = NewObject<UDialogAssetGraphNode_Task>(ContextMenuBuilder.OwnerOfTemporaries, UDialogAssetGraphNode_Task::StaticClass());
+                UDialogAssetGraphNode_Task* TaskNode = Cast<UDialogAssetGraphNode_Task>(AddTaskAction->NodeTemplate);
                 TaskNode->SetFunctionData(Class, Function->GetFName());
-                AddTaskAction->NodeTemplate = TaskNode;
             }
         }
         ContextMenuBuilder.Append(TasksBuilder);
@@ -223,11 +207,7 @@ void UEdGraphSchema_DialogAsset::GetGraphContextActions(FGraphContextMenuBuilder
 const FPinConnectionResponse UEdGraphSchema_DialogAsset::CanCreateConnection(const UEdGraphPin* PinA, const UEdGraphPin* PinB) const
 {
     if(PinA->GetOwningNode() == PinB->GetOwningNode()) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Can't connect a Node with itself"));
-    if(PinA->Direction == PinB->Direction)
-    {
-        if(PinA->Direction == EGPD_Input) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Can't connect input pin to input pin"));
-        if(PinA->Direction == EGPD_Output) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Can't connect output pin to output pin"));
-    }
+    if(PinA->Direction == PinB->Direction) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Can't connect pins with the same direction"));
 
     const bool bPinAHasConnection = PinA->HasAnyConnections();
     const bool bPinBHasConnection = PinB->HasAnyConnections();
@@ -257,7 +237,26 @@ const FPinConnectionResponse UEdGraphSchema_DialogAsset::CanCreateConnection(con
         }
     }
 
+    const bool bPinAIsInput = PinA->Direction == EGPD_Input;
+    const bool bPinBIsInput = PinB->Direction == EGPD_Input;
+    UDialogAssetGraphNode_Prompt* PromptNodeA = Cast<UDialogAssetGraphNode_Prompt>(PinA->GetOwningNode());
+    UDialogAssetGraphNode_Prompt* PromptNodeB = Cast<UDialogAssetGraphNode_Prompt>(PinB->GetOwningNode());
+
+    UDialogAssetGraphNode_Choice* ChoiceNodeA = Cast<UDialogAssetGraphNode_Choice>(PinA->GetOwningNode());
+    UDialogAssetGraphNode_Choice* ChoiceNodeB = Cast<UDialogAssetGraphNode_Choice>(PinB->GetOwningNode());
+
+    if(PromptNodeA && !bPinAIsInput && !ChoiceNodeB) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Prompt output pins can only connect to choice nodes"));
+    if(PromptNodeB && !bPinBIsInput && !ChoiceNodeA) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Prompt output pins can only connect to choice nodes"));
+
+    if(ChoiceNodeA && bPinAIsInput && !PromptNodeB) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Prompt output pins can only connect to choice nodes"));
+    if(ChoiceNodeB && bPinBIsInput && !PromptNodeA) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Prompt output pins can only connect to choice nodes"));
+
     return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT("Make Connection"));
+}
+
+FConnectionDrawingPolicy* UEdGraphSchema_DialogAsset::CreateConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float InZoomFactor, const FSlateRect& InClippingRect, class FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const
+{
+    return new FDialogGraphConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, InZoomFactor, InClippingRect, InDrawElements, InGraphObj);
 }
 
 void UEdGraphSchema_DialogAsset::GetContextMenuActions(UToolMenu* Menu, UGraphNodeContextMenuContext* Context) const
@@ -271,40 +270,21 @@ void UEdGraphSchema_DialogAsset::GetContextMenuActions(UToolMenu* Menu, UGraphNo
         Section.AddMenuEntry(FGenericCommands::Get().Duplicate);
     }
 
-    bool IsValidPin = Context->Pin && Context->Pin->PinType.PinSubCategory == UDialogAssetEditorTypes::PinSubCategory_ChoiceNode;
-    bool IsValidNode = Context->Node && Cast<UDialogAssetGraphNode_Line>(Context->Node);
-    if(IsValidPin)
+    if(Context->Node)
     {
-        FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaPinActions", FText::FromString("Branch Pin Actions"));
-
-        UDialogAssetGraphNode_Choice* ChoiceNode = Cast<UDialogAssetGraphNode_Choice>(Context->Pin->GetOwningNode());
-        UEdGraphPin* PinToRemove = const_cast<UEdGraphPin*>(Context->Pin);
-
-        Section.AddMenuEntry(
-                "Remove Pin", 
-                FText::FromString("Remove Pin"), 
-                FText::FromString("Remove the selected pin"),
-                FSlateIcon(FAppStyle::GetAppStyleSetName(), "GenericCommands.Delete"),
-                FUIAction(FExecuteAction::CreateUObject(ChoiceNode, &UDialogAssetGraphNode_Choice::RemovePin, PinToRemove))
-                );
-    }
-
-    if(IsValidPin || IsValidNode)
-    {
-        FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaConditions", FText::FromString("Dialog Conditions"));
-
-        if(IsValidNode && !IsValidPin)
+        const UDialogAssetGraphNode* Node = Cast<UDialogAssetGraphNode>(Context->Node);
+        if(Node && Node->CanUserAddCondition())
         {
+            FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaConditions", FText::FromString("Dialog Conditions"));
             Context->Pin = Context->Node->Pins[0];
+
+            // Add the condition action submenu with all the conditions into it
+            Section.AddSubMenu(
+                    "AddCondition",
+                    FText::FromString("Add Condition..."),
+                    FText::FromString("Adds new condition to the node"),
+                    FNewToolMenuDelegate::CreateUObject(this, &UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu, Context));
         }
-
-        // Add the condition action submenu with all the conditions into it
-        Section.AddSubMenu(
-                "AddCondition",
-                FText::FromString("Add Condition..."),
-                FText::FromString("Adds new condition to the choice pin or line node"),
-                FNewToolMenuDelegate::CreateUObject(this, &UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu, Context));
-
     }
 
     Super::GetContextMenuActions(Menu, Context);
@@ -384,10 +364,17 @@ void UEdGraphSchema_DialogAsset::OnActionSelected(const TArray<TSharedPtr<FEdGra
     }
 }
 
-TSharedPtr<FDialogSchemaAction_NewNode> UEdGraphSchema_DialogAsset::AddNewNodeAction(FGraphActionListBuilderBase& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip)
+TSharedPtr<FDialogSchemaAction_NewNode> UEdGraphSchema_DialogAsset::AddNewNodeAction(FGraphActionListBuilderBase& ContextMenuBuilder, const UClass* Class, const FText& InCategory, const FText& InMenuDesc, const FText& InTooltip)
 {
+    FText Category = InCategory.IsEmpty() ? FObjectEditorUtils::GetCategoryText(Class) : InCategory;
+    FText MenuDesc = InMenuDesc.IsEmpty() ? FText::FromString(FName::NameToDisplayString(Class->GetMetaData(TEXT("DisplayName")), false)) : InMenuDesc;
+    FText Tooltip = InTooltip.IsEmpty() ? Class->GetToolTipText() : InTooltip;
+
     TSharedPtr<FDialogSchemaAction_NewNode> NewAction = TSharedPtr<FDialogSchemaAction_NewNode>(new FDialogSchemaAction_NewNode(Category, MenuDesc, Tooltip, 0));
     ContextMenuBuilder.AddAction(NewAction);
+    
+    UDialogAssetGraphNode* TemplateNode = NewObject<UDialogAssetGraphNode>(ContextMenuBuilder.OwnerOfTemporaries, Class);
+    NewAction->NodeTemplate = TemplateNode;
 
     return NewAction;
 }

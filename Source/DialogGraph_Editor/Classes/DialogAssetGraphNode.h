@@ -24,11 +24,19 @@ public:
     //~ End UEdGraphNode Interface
 
     virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const {}
+    virtual bool CanUserAddCondition() const { return false; }
 
+    void AddCondition(TObjectPtr<UClass> InClass, FName InName);
+
+    bool HasConditions() const { return !Conditions.IsEmpty(); }
     void SetVisualGraphNode(SGraphNode* GraphNode) { VisualGraphNode = GraphNode; }
+
 
 protected:
     SGraphNode* VisualGraphNode = nullptr;
-
     void InitializeBindedFunction(FBindedFunctionData& FunctionData);
+
+private:
+    UPROPERTY(EditAnywhere)
+    TArray<FBindedFunctionData> Conditions;
 };
