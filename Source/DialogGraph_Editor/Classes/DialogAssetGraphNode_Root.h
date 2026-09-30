@@ -18,5 +18,6 @@ public:
     virtual FSlateIcon GetIconAndTint(FLinearColor& OutColor) const override;
     virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override { return FText::FromString(TEXT("On Dialog Start")); }
     virtual bool CanUserDeleteNode() const override;
+    virtual bool CanDuplicateNode() const override;
     //~ End UEdGraphNode interface
 };

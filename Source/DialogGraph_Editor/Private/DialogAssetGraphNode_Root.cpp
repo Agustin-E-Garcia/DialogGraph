@@ -24,3 +24,5 @@ FSlateIcon UDialogAssetGraphNode_Root::GetIconAndTint(FLinearColor& OutColor) co
 }
 
 bool UDialogAssetGraphNode_Root::CanUserDeleteNode() const { return false; }
+bool UDialogAssetGraphNode_Root::CanDuplicateNode() const { return false; }
+

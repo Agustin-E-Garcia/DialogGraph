@@ -79,6 +79,7 @@ public:
     virtual FConnectionDrawingPolicy* CreateConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float InZoomFactor, const FSlateRect& InClippingRect, class FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const override;
     //~ End UEdGraphSchema Interface
 
+
     static TSharedPtr<FDialogSchemaAction_NewNode> AddNewNodeAction(FGraphActionListBuilderBase& ContextMenuBuilder, const UClass* Class, const FText& Category = FText(), const FText& MenuDesc = FText(), const FText& Tooltip = FText());
 
 protected:

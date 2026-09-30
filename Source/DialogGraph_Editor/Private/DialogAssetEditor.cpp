@@ -2,12 +2,21 @@
 #include "DetailsViewArgs.h"
 #include "DialogAssetGraph.h"
 #include "DialogGraph_Editor.h"
+#include "EdGraph/EdGraph.h"
 #include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphSchema.h"
+#include "EdGraphUtilities.h"
+#include "Editor/EditorEngine.h"
+#include "Engine/Engine.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Framework/Commands/UIAction.h"
 #include "Framework/Commands/UICommandList.h"
 #include "Framework/Docking/TabManager.h"
+#include "GenericPlatform/GenericPlatformMisc.h"
 #include "GraphEditor.h"
+#include "HAL/Platform.h"
+#include "Linux/LinuxPlatformApplicationMisc.h"
+#include "Misc/Guid.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorDelegates.h"
 #include "PropertyEditorModule.h"
@@ -25,6 +34,7 @@
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/SBoxPanel.h"
 #include "WorkflowOrientedApp/WorkflowCentricApplication.h"
+#include "HAL/PlatformApplicationMisc.h"
 
 const FName FDialogAssetEditor::DialogGraphMode(TEXT("DialogGraph"));
 
@@ -34,6 +44,9 @@ FDialogAssetEditor::FDialogAssetEditor()
 
     GraphClass = UDialogAssetGraph::StaticClass();
     GraphName = "Dialog Asset";
+
+    UEditorEngine* Editor = (UEditorEngine*)GEngine;
+    if(Editor) Editor->RegisterForUndo(this);
 }
 
 FDialogAssetEditor::~FDialogAssetEditor()
@@ -196,18 +209,147 @@ void FDialogAssetEditor::CopySelectedNodes()
     TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin();
     if(!CurrentGraphEditor.IsValid()) return;
 
-    const FGraphPanelSelectionSet SelectedNodes = CurrentGraphEditor->GetSelectedNodes();
+    FGraphPanelSelectionSet SelectedNodes = CurrentGraphEditor->GetSelectedNodes();
+
+    FString ExportedText;
+    for(FGraphPanelSelectionSet::TIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
+    {
+        UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
+        if(Node == nullptr || !Node->CanDuplicateNode())
+        {
+            SelectedIter.RemoveCurrent();
+            continue;
+        }
+
+        Node->PrepareForCopying();
+    }
+
+    FEdGraphUtilities::ExportNodesToText(SelectedNodes, ExportedText);
+    FPlatformApplicationMisc::ClipboardCopy(*ExportedText);
 }
-bool FDialogAssetEditor::CanCopySelectedNodes() { return true; }
 
-void FDialogAssetEditor::CutSelectedNodes() {}
-bool FDialogAssetEditor::CanCutSelectedNodes() { return true; }
+bool FDialogAssetEditor::CanCopySelectedNodes() 
+{
+    // If any of the nodes can be duplicated then we should allow copying
+	TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin();
+    if(!CurrentGraphEditor.IsValid()) return false;
 
-void FDialogAssetEditor::PasteSelectedNodes() {}
-bool FDialogAssetEditor::CanPasteSelectedNodes() { return true; }
+    const FGraphPanelSelectionSet SelectedNodes = CurrentGraphEditor->GetSelectedNodes();
+	for (FGraphPanelSelectionSet::TConstIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
+	{
+		UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
+		if (Node && Node->CanDuplicateNode())
+		{
+			return true;
+		}
+	}
 
-void FDialogAssetEditor::DuplicateSelectedNodes() {}
-bool FDialogAssetEditor::CanDuplicateSelectedNodes() { return true; }
+	return false;
+}
+
+void FDialogAssetEditor::CutSelectedNodes() 
+{
+    CopySelectedNodes();
+    DeleteSelectedNodes();
+}
+
+bool FDialogAssetEditor::CanCutSelectedNodes()
+{ 
+    return CanCopySelectedNodes() && CanDeleteSelectedNodes();
+}
+
+void FDialogAssetEditor::PasteSelectedNodes()
+{
+    TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin();
+    if(!CurrentGraphEditor) return;
+
+    const FScopedTransaction Transaction(FGenericCommands::Get().Paste->GetDescription());
+    UDialogAssetGraph* DialogGraph = Cast<UDialogAssetGraph>(CurrentGraphEditor->GetCurrentGraph());
+
+    if(DialogGraph) DialogGraph->Modify();
+
+    FString TextToImport;
+    FPlatformApplicationMisc::ClipboardPaste(TextToImport);
+
+    TSet<UEdGraphNode*> PastedNodes;
+    FEdGraphUtilities::ImportNodesFromText(DialogGraph, TextToImport, PastedNodes);
+
+    FVector2D AvgNodePosition(0.0f, 0.0f);
+    int32 AvgCount = 0;
+
+    for(TSet<UEdGraphNode*>::TIterator It(PastedNodes); It; ++It)
+    {
+        UEdGraphNode* EdNode = *It;
+        if(EdNode)
+        {
+            AvgNodePosition.X += EdNode->NodePosX;
+            AvgNodePosition.Y += EdNode->NodePosY;
+            ++AvgCount;
+        }
+    }
+
+    if(AvgCount > 0)
+    {
+        float InvNumNodes = 1.0f / float(AvgCount);
+        AvgNodePosition.X *= InvNumNodes;
+        AvgNodePosition.Y *= InvNumNodes;
+    }
+
+    TMap<FGuid, FGuid> NewToOldNodeMapping;
+    FVector2f Location = CurrentGraphEditor->GetPasteLocation2f();
+    for(TSet<UEdGraphNode*>::TIterator It(PastedNodes); It; ++It)
+    {
+        UEdGraphNode* PasteNode = *It;
+        if(!PasteNode) continue;
+
+        CurrentGraphEditor->SetNodeSelection(PasteNode, true);
+
+        const FVector::FReal NodePosX = (PasteNode->NodePosX - AvgNodePosition.X) + Location.X;
+        const FVector::FReal NodePosY = (PasteNode->NodePosY - AvgNodePosition.Y) + Location.Y;
+
+        PasteNode->NodePosX = static_cast<int32>(NodePosX);
+        PasteNode->NodePosY = static_cast<int32>(NodePosY);
+
+        PasteNode->SnapToGrid(16);
+
+        const FGuid OldGuid = PasteNode->NodeGuid;
+
+        PasteNode->CreateNewGuid();
+
+        const FGuid NewGuid = PasteNode->NodeGuid;
+
+        NewToOldNodeMapping.Add(NewGuid, OldGuid);
+    }
+
+    // Update UI
+    CurrentGraphEditor->NotifyGraphChanged();
+
+    UObject* GraphOwner = DialogGraph->GetOuter();
+    if (GraphOwner)
+    {
+        GraphOwner->PostEditChange();
+        GraphOwner->MarkPackageDirty();
+    }
+}
+
+bool FDialogAssetEditor::CanPasteSelectedNodes()
+{
+    TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin();
+    if (!CurrentGraphEditor.IsValid()) return false;
+
+    FString ClipboardContent;
+    FPlatformApplicationMisc::ClipboardPaste(ClipboardContent);
+
+    return FEdGraphUtilities::CanImportNodesFromText(CurrentGraphEditor->GetCurrentGraph(), ClipboardContent);
+}
+
+void FDialogAssetEditor::DuplicateSelectedNodes() 
+{
+    CopySelectedNodes();
+    PasteSelectedNodes();
+}
+
+bool FDialogAssetEditor::CanDuplicateSelectedNodes() { return CanCopySelectedNodes(); }
 
 void FDialogAssetEditor::SaveAsset_Execute()
 {
@@ -275,4 +417,28 @@ void FDialogAssetEditor::OnSelectedNodesChanged(const TSet<class UObject*>& NewS
 
 void FDialogAssetEditor::NotifyPostChange(const FPropertyChangedEvent& PropertychangedEvent, FProperty* PropertyThatChanged)
 {
+}
+
+void FDialogAssetEditor::PostUndo(bool bSuccess)
+{
+    if(!bSuccess) return;
+
+    if(TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin())
+    {
+        CurrentGraphEditor->ClearSelectionSet();
+        CurrentGraphEditor->NotifyGraphChanged();
+    }
+    FSlateApplication::Get().DismissAllMenus();
+}
+
+void FDialogAssetEditor::PostRedo(bool bSuccess)
+{
+    if(!bSuccess) return;
+
+    if(TSharedPtr<SGraphEditor> CurrentGraphEditor = GraphEditorPtr.Pin())
+    {
+        CurrentGraphEditor->ClearSelectionSet();
+        CurrentGraphEditor->NotifyGraphChanged();
+    }
+    FSlateApplication::Get().DismissAllMenus();
 }

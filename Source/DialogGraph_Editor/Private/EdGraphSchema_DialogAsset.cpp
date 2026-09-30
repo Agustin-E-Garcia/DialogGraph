@@ -15,17 +15,14 @@
 #include "EdGraph/EdGraphSchema.h"
 #include "EdGraphNode_Comment.h"
 #include "Framework/Application/SlateApplication.h"
-#include "Framework/Commands/UIAction.h"
 #include "GraphEditor.h"
 #include "Internationalization/Text.h"
 #include "Modules/ModuleManager.h"
 #include "ScopedTransaction.h"
 #include "AIGraphTypes.h"
 #include "DialogGraph_Editor.h"
-#include "Styling/AppStyle.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/SubclassOf.h"
-#include "Textures/SlateIcon.h"
 #include "ToolMenuDelegates.h"
 #include "ToolMenuEntry.h"
 #include "ToolMenuSection.h"
@@ -50,6 +47,10 @@ namespace
 
 UEdGraphNode* FDialogSchemaAction_AddComment::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2f& Location, bool bSelectNewNode)
 {
+    const FScopedTransaction Transaction(FText::FromString("Add Comment"));
+    ParentGraph->Modify();
+    if(FromPin) FromPin->Modify();
+
     UEdGraphNode_Comment* const CommentTemplate = NewObject<UEdGraphNode_Comment>();
 
     FVector2f SpawnLocation = Location;
@@ -82,10 +83,7 @@ UEdGraphNode* FDialogSchemaAction_NewNode::PerformAction(class UEdGraph* ParentG
     {
         const FScopedTransaction Transaction(FText::FromString("Add Node"));
         ParentGraph->Modify();
-        if(FromPin)
-        {
-            FromPin->Modify();
-        }
+        if(FromPin) FromPin->Modify();
 
         NodeTemplate->SetFlags(RF_Transactional);
 
@@ -163,8 +161,12 @@ void UEdGraphSchema_DialogAsset::GetGraphContextActions(FGraphContextMenuBuilder
 
     // Add the ability to create different dialog-related nodes to the context menu
     {
-        UEdGraphSchema_DialogAsset::AddNewNodeAction(NodesBuilder, UDialogAssetGraphNode_Choice::StaticClass());
-        if(ContextMenuBuilder.FromPin && Cast<UDialogAssetGraphNode_Prompt>(ContextMenuBuilder.FromPin->GetOwningNode())) return;
+        if(ContextMenuBuilder.FromPin && Cast<UDialogAssetGraphNode_Prompt>(ContextMenuBuilder.FromPin->GetOwningNode()))
+        {
+            UEdGraphSchema_DialogAsset::AddNewNodeAction(NodesBuilder, UDialogAssetGraphNode_Choice::StaticClass());
+            ContextMenuBuilder.Append(NodesBuilder);
+            return;
+        }
 
         UEdGraphSchema_DialogAsset::AddNewNodeAction(NodesBuilder, UDialogAssetGraphNode_Line::StaticClass());
         UEdGraphSchema_DialogAsset::AddNewNodeAction(NodesBuilder, UDialogAssetGraphNode_Prompt::StaticClass());
@@ -175,6 +177,7 @@ void UEdGraphSchema_DialogAsset::GetGraphContextActions(FGraphContextMenuBuilder
     {
         UDialogAsset* DialogAsset = CastChecked<UDialogAsset>(ContextMenuBuilder.CurrentGraph->GetOuter());
         FCategorizedGraphActionListBuilder TasksBuilder(TEXT("Tasks"));
+        TasksBuilder.OwnerOfTemporaries = ContextMenuBuilder.OwnerOfTemporaries;
 
         for(const TSubclassOf<UDialogGraphFunctionLibrary>& LibraryClass : DialogAsset->RegisteredLibraries)
         {

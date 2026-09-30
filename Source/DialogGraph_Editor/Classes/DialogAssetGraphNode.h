@@ -21,6 +21,7 @@ public:
     virtual bool ShowPaletteIconOnNode() const override;
     virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
     virtual bool CanUserDeleteNode() const override;
+	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
     //~ End UEdGraphNode Interface
 
     virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const {}

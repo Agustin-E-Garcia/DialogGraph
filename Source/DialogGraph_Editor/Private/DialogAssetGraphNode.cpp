@@ -1,6 +1,8 @@
 #include "DialogAssetGraphNode.h"
 #include "DialogAssetEditorTypes.h"
+#include "EdGraph/EdGraphSchema.h"
 #include "SGraphNode.h"
+#include "EdGraphSchema_DialogAsset.h"
 
 UDialogAssetGraphNode::UDialogAssetGraphNode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -28,6 +30,21 @@ void UDialogAssetGraphNode::GetNodeContextMenuActions(class UToolMenu* Menu, cla
 }
 
 bool UDialogAssetGraphNode::CanUserDeleteNode() const { return true; }
+
+void UDialogAssetGraphNode::AutowireNewNode(UEdGraphPin* FromPin)
+{
+    if(!FromPin || Pins.Num() <= 0) return;
+
+    const UEdGraphSchema_DialogAsset* Schema = Cast<UEdGraphSchema_DialogAsset>(GetSchema());
+    if(Schema)
+    {
+        FPinConnectionResponse ConnectionResponse = Schema->CanCreateConnection(FromPin, Pins[0]);
+        if(ConnectionResponse.Response == ECanCreateConnectionResponse::CONNECT_RESPONSE_MAKE)
+        {
+            FromPin->MakeLinkTo(Pins[0]);
+        }
+    }
+}
 
 void UDialogAssetGraphNode::AddCondition(TObjectPtr<UClass> InClass, FName InName)
 {

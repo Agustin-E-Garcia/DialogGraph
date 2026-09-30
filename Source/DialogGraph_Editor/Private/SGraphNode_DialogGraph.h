@@ -17,13 +17,10 @@ public:
     //~ Begin SGraphNode Interface
     virtual void UpdateGraphNode() override;
     virtual TSharedRef<SWidget> CreateNodeContentArea() override;
-
-protected:
-    //virtual void CreateOutputSideAddButton(TSharedPtr<SVerticalBox> OutputBox) override;
-    //virtual EVisibility IsAddPinButtonVisible() const override;
-    //virtual FReply OnAddPin() override;
     //~ End SGraphNode Interface
 
+protected:
+
     void OnTextCommited(const FText& InText, ETextCommit::Type Type);
-    //const FSlateBrush* GetConditionLockImage();
+    TSharedRef<SWidget> CreateNodeConditionLock();
 };

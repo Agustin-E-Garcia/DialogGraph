@@ -16,6 +16,7 @@
 #include "Types/SlateEnums.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
+#include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
 #include "ScopedTransaction.h"
 #include "EdGraph/EdGraph.h"
@@ -80,7 +81,7 @@ void SGraphNode_DialogGraph::UpdateGraphNode()
                         SNew(SBox)
                         .HAlign(HAlign_Fill)
                         .VAlign(VAlign_Fill)
-                        .MinDesiredWidth(50.0f)
+                        .MinDesiredWidth(70.0f)
                         [
                             SNew(SVerticalBox)
                             +SVerticalBox::Slot()
@@ -145,6 +146,13 @@ void SGraphNode_DialogGraph::UpdateGraphNode()
                     SAssignNew(RightNodeBox, SVerticalBox)
                 ]
             ]
+            +SOverlay::Slot()
+            .HAlign(HAlign_Fill)
+            .VAlign(VAlign_Fill)
+            .Padding(-8.0f, -8.0f, -8.0f, -8.0f)
+            [
+                CreateNodeConditionLock()
+            ]
         ];
 
     CreatePinWidgets();
@@ -169,40 +177,6 @@ TSharedRef<SWidget> SGraphNode_DialogGraph::CreateNodeContentArea()
             .ModiferKeyForNewLine(EModifierKey::Shift);
 }
 
-/*void SGraphNode_DialogGraph::CreateOutputSideAddButton(TSharedPtr<SVerticalBox> OutputBox)
-{
-    TSharedRef<SWidget> AddPinButton = AddPinButtonContent(FText::FromString("Add Pin"), FText::FromString("Add new pin"));
-
-    OutputBox->AddSlot()
-    .AutoHeight()
-    .VAlign(VAlign_Center)
-    [
-        AddPinButton
-    ];
-}
-
-EVisibility SGraphNode_DialogGraph::IsAddPinButtonVisible() const
-{
-    UDialogAssetGraphNode_Choice* GraphNode_Choice = Cast<UDialogAssetGraphNode_Choice>(GraphNode);
-    if(GraphNode_Choice) return EVisibility::Visible;
-
-    return EVisibility::Collapsed;
-}
-
-FReply SGraphNode_DialogGraph::OnAddPin()
-{
-    UDialogAssetGraphNode_Choice* GraphNode_Choice = CastChecked<UDialogAssetGraphNode_Choice>(GraphNode);
-
-    const FScopedTransaction Transaction(FText::FromString("Add Option Pin"));
-    GraphNode_Choice->Modify();
-
-    GraphNode_Choice->AddPin();
-    UpdateGraphNode();
-    GraphNode_Choice->GetGraph()->NotifyNodeChanged(GraphNode_Choice);
-
-    return FReply::Handled();
-}*/
-
 void SGraphNode_DialogGraph::OnTextCommited(const FText& InText, ETextCommit::Type Type)
 {
     if(UDialogAssetGraphNode_Line* GraphNode_Line = Cast<UDialogAssetGraphNode_Line>(GraphNode))
@@ -214,10 +188,21 @@ void SGraphNode_DialogGraph::OnTextCommited(const FText& InText, ETextCommit::Ty
     }
 }
 
-/*const FSlateBrush* SGraphNode_DialogGraph::GetConditionLockImage()
+TSharedRef<SWidget> SGraphNode_DialogGraph::CreateNodeConditionLock()
 {
-    UDialogAssetGraphNode_Line* Node = Cast<UDialogAssetGraphNode_Line>(GraphNode);
+    UDialogAssetGraphNode* Node = Cast<UDialogAssetGraphNode>(GraphNode);
 
-    const bool bHasConditions = Node && Node->HasConditions();
-    return FAppStyle::GetBrush(bHasConditions ? "Sequencer.LockSequence" : "Sequencer.UnlockSequence");
-}*/
+    if(Node && Node->CanUserAddCondition() && Node->HasConditions())
+    {
+        return SNew(SBox)
+                .HAlign(HAlign_Right)
+                .VAlign(VAlign_Top)
+                [
+                    SNew(SImage)
+                    .Image(FAppStyle::GetBrush("Sequencer.LockSequence"))
+                    .ColorAndOpacity(FLinearColor::Red)
+                ];
+    }
+
+    return SNullWidget::NullWidget;
+}

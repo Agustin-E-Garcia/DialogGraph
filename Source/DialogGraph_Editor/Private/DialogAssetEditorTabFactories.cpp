@@ -3,6 +3,7 @@
 #include "DialogAsset.h"
 #include "PropertyEditorModule.h"
 
+#include "ScopedTransaction.h"
 #include "Styling/AppStyle.h"
 #include "Templates/SharedPointer.h"
 #include "Types/SlateEnums.h"
@@ -30,6 +31,7 @@ void FDialogAssetGraphTabFactory::Initialize()
     SGraphEditor::FGraphEditorEvents GraphEvents;
     {
         GraphEvents.OnSelectionChanged.BindSP(this, &FDialogAssetGraphTabFactory::OnSelectionChanged);
+        GraphEvents.OnTextCommitted.BindSP(this, &FDialogAssetGraphTabFactory::OnNodeTitleCommited);
     }
 
     SAssignNew(DialogGraphEditorPtr, SGraphEditor)
@@ -66,6 +68,17 @@ void FDialogAssetGraphTabFactory::OnSelectionChanged(const TSet<class UObject*>&
     if(!editor.IsValid()) return;
 
     editor->OnSelectedNodesChanged(NewSelection);
+}
+
+void FDialogAssetGraphTabFactory::OnNodeTitleCommited(const FText& NewText, ETextCommit::Type CommitInfo, UEdGraphNode* NodeBeingChanged)
+{
+    if(NodeBeingChanged)
+    {
+        static const FText TransactionTitle = FText::FromString("Rename Node");
+        const FScopedTransaction Transaction(TransactionTitle);
+        NodeBeingChanged->Modify();
+        NodeBeingChanged->OnRenameNode(NewText.ToString());
+    }
 }
 
 ///////////////////////////////////////

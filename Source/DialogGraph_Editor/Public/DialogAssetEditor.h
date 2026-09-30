@@ -35,6 +35,8 @@ public:
     //~ End IToolkit interface
 
     //~ Begin FEditorUndoClient interface
+    virtual void PostUndo(bool bSuccess) override;
+    virtual void PostRedo(bool bSuccess) override;
     //~ End FEditorUndoClient interface
 
     //~ Begin FNotifyHook interface

@@ -4,6 +4,8 @@
 #include "Templates/SharedPointer.h"
 #include "WorkflowOrientedApp/WorkflowTabFactory.h"
 
+class UEdGraphNode;
+
 struct FDialogAssetGraphTabFactory : public FWorkflowTabFactory
 {
 public:
@@ -18,6 +20,7 @@ protected:
 
 private:
     void OnSelectionChanged(const TSet<class UObject*>& NewSelection);
+    void OnNodeTitleCommited(const FText& NewText, ETextCommit::Type CommitInfo, UEdGraphNode* NodeBeingChanged);
 
     TSharedPtr<class SGraphEditor> DialogGraphEditorPtr;
     TWeakPtr<class FDialogAssetEditor> DialogAssetEditorPtr;
