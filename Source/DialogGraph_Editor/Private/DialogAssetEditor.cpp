@@ -15,7 +15,6 @@
 #include "GenericPlatform/GenericPlatformMisc.h"
 #include "GraphEditor.h"
 #include "HAL/Platform.h"
-#include "Linux/LinuxPlatformApplicationMisc.h"
 #include "Misc/Guid.h"
 #include "Modules/ModuleManager.h"
 #include "PropertyEditorDelegates.h"
@@ -25,7 +24,6 @@
 #include "Templates/SubclassOf.h"
 #include "Toolkits/AssetEditorToolkit.h"
 #include "Types/SlateEnums.h"
-#include "UObject/UObjectGlobals.h"
 #include "DialogAssetEditorApplicationMode.h"
 #include "DialogAsset.h"
 #include "Kismet2/BlueprintEditorUtils.h"
@@ -52,6 +50,26 @@ FDialogAssetEditor::FDialogAssetEditor()
 FDialogAssetEditor::~FDialogAssetEditor()
 {
 }
+
+FName FDialogAssetEditor::GetToolkitFName() const
+{
+    return FName(TEXT("DialogAssetEditor"));
+}
+
+FText FDialogAssetEditor::GetBaseToolkitName() const
+{
+    return FText::FromString("DialogAssetEditor");
+}
+
+FString FDialogAssetEditor::GetWorldCentricTabPrefix() const
+{
+    return TEXT("Dialog Asset Editor");
+}
+
+FLinearColor FDialogAssetEditor::GetWorldCentricTabColorScale() const
+{
+    return FLinearColor(0.2, 0.2, 0.5, 0.8);
+};
 
 void FDialogAssetEditor::RegisterTabSpawners(const TSharedRef<FTabManager>& TabManager)
 {
@@ -441,4 +459,14 @@ void FDialogAssetEditor::PostRedo(bool bSuccess)
         CurrentGraphEditor->NotifyGraphChanged();
     }
     FSlateApplication::Get().DismissAllMenus();
+}
+
+UDialogAsset* FDialogAssetEditor::GetDialogAsset() const
+{
+    return DialogAsset;
+}
+
+void FDialogAssetEditor::SetGraphEditor(TSharedPtr<class SGraphEditor> GraphEditor)
+{
+    GraphEditorPtr = GraphEditor;
 }

@@ -1,12 +1,19 @@
 #include "DialogAssetGraphNode_Prompt.h"
 #include "DialogAssetEditorTypes.h"
+#include "DialogAssetGraphNode_Choice.h"
 #include "DialogNode.h"
 #include "EdGraph/EdGraphNode.h"
+#include "EdGraph/EdGraphPin.h"
 #include "Textures/SlateIcon.h"
 #include "Styling/AppStyle.h"
 
 UDialogAssetGraphNode_Prompt::UDialogAssetGraphNode_Prompt(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+}
+
+EDialogNodeType UDialogAssetGraphNode_Prompt::GetNodeType() const
+{
+    return EDialogNodeType::Prompt;
 }
 
 void UDialogAssetGraphNode_Prompt::AllocateDefaultPins()
@@ -27,21 +34,32 @@ FSlateIcon UDialogAssetGraphNode_Prompt::GetIconAndTint(FLinearColor& OutColor) 
     return Icon;
 }
 
+FText UDialogAssetGraphNode_Prompt::GetNodeTitle(ENodeTitleType::Type titleType) const
+{
+    return FText::FromString(TEXT("Prompt"));
+}
+
 void UDialogAssetGraphNode_Prompt::ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const
 {
-    /*int outputPinIndex = -1;
-    for(int q = 0; q < GetAllPins().Num(); q++)
+    for(UEdGraphPin* Pin : GetAllPins())
     {
-        const UEdGraphPin* pin = GetAllPins()[q];
+        if(Pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
+        if(!Pin->HasAnyConnections()) continue;
 
-        if(pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
-        outputPinIndex++;
+        for(int ConnectionID = 0; ConnectionID < Pin->LinkedTo.Num(); ConnectionID++)
+        {
+            UDialogAssetGraphNode_Choice* ChoiceNode = Cast<UDialogAssetGraphNode_Choice>(Pin->LinkedTo[ConnectionID]->GetOwningNode());
+            if(!ChoiceNode) continue;
 
-        FPinInfo& info = RuntimeNode->NextIDs.AddDefaulted_GetRef();
-        info.Title = GuidToPinData.Find(pin->PinId)->DefaultValue;
-        info.ConditionsData = GuidToPinData.Find(pin->PinId)->Conditions;
+            FPinInfo& info = RuntimeNode->NextIDs.AddDefaulted_GetRef();
+            info.Title = ChoiceNode->GetDialogLine().ToString();
+            info.ConditionsData = ChoiceNode->GetConditionsData();
 
-        if(!pin->HasAnyConnections()) info.NextID = -1;
-        else info.NextID = *GuidToIndex.Find(pin->LinkedTo[0]->GetOwningNode()->NodeGuid);
-     }*/
+            const UEdGraphPin* ChoicePin = ChoiceNode->GetOutputPin();
+            if(!ChoicePin) continue;
+
+            if(!ChoicePin->HasAnyConnections()) info.NextID = -1;
+            else info.NextID = *GuidToIndex.Find(ChoicePin->LinkedTo[0]->GetOwningNode()->NodeGuid);
+        }
+    }
 }

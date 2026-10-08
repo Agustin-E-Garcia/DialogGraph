@@ -28,10 +28,10 @@ public:
     void InitDialogAssetGraph(const EToolkitMode::Type mode, const TSharedPtr<IToolkitHost>& initToolkitHost, UObject* inObject);
 
     //~ Begin IToolkit interface
-    virtual FName GetToolkitFName() const override { return FName(TEXT("DialogAssetEditor")); }
-    virtual FText GetBaseToolkitName() const override { return FText::FromString("DialogAssetEditor"); }
-    virtual FString GetWorldCentricTabPrefix() const override { return TEXT("Dialog Asset Editor"); }
-    virtual FLinearColor GetWorldCentricTabColorScale() const override { return FLinearColor(0.2, 0.2, 0.5, 0.8); };
+    virtual FName GetToolkitFName() const override;
+    virtual FText GetBaseToolkitName() const override;
+    virtual FString GetWorldCentricTabPrefix() const override;
+    virtual FLinearColor GetWorldCentricTabColorScale() const override;
     //~ End IToolkit interface
 
     //~ Begin FEditorUndoClient interface
@@ -47,10 +47,10 @@ public:
     void OnFinishedChangingProperties(const FPropertyChangedEvent& PropertyChangedEvent);
 
     /** Register the SGraphEditor object */
-    void SetGraphEditor(TSharedPtr<class SGraphEditor> GraphEditor) { GraphEditorPtr = GraphEditor; }
+    void SetGraphEditor(TSharedPtr<class SGraphEditor> GraphEditor);
 
     /** Get the dialog asset we're editing (if any) */
-    UDialogAsset* GetDialogAsset() { return DialogAsset; }
+    UDialogAsset* GetDialogAsset() const;
 
     void RegisterToolbarTab(const TSharedRef<class FTabManager>& TabManager);
 

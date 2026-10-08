@@ -6,7 +6,6 @@
 #include "EdGraphUtilities.h"
 #include "IAssetTools.h"
 #include "AssetToolsModule.h"
-#include "SGraphPin.h"
 #include "Templates/SharedPointer.h"
 #include "Toolkits/AssetEditorToolkit.h"
 #include "AIGraphTypes.h"
@@ -61,15 +60,20 @@ void FDialogGraph_EditorModule::StartupModule()
     EAssetTypeCategories::Type assetType = assetToolsModule.RegisterAdvancedAssetCategory(FName(TEXT("Custom Assets")), FText::FromString("Dialog Asset"));
     TSharedPtr<FDialogAssetAction> dialogAssetAction = MakeShareable(new FDialogAssetAction(assetType));
     assetToolsModule.RegisterAssetTypeActions(dialogAssetAction.ToSharedRef());
-
-    if(!ClassCache.IsValid())
-    {
-        ClassCache = MakeShareable(new FGraphNodeClassHelper(UDialogAssetGraphNode::StaticClass()));
-    }
 }
 
 void FDialogGraph_EditorModule::ShutdownModule()
 {
+}
+
+TSharedPtr<FExtensibilityManager> FDialogGraph_EditorModule::GetMenuExtensibilityManager()
+{
+    return MenuExtensibilityManager;
+}
+
+TSharedPtr<FExtensibilityManager> FDialogGraph_EditorModule::GetToolBarExtensibilityManager()
+{
+    return ToolBarExtensibilityManager;
 }
 
 #undef LOCTEXT_NAMESPACE

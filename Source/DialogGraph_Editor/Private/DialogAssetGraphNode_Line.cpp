@@ -8,15 +8,25 @@ UDialogAssetGraphNode_Line::UDialogAssetGraphNode_Line(const FObjectInitializer&
 {
 }
 
+EDialogNodeType UDialogAssetGraphNode_Line::GetNodeType() const
+{
+    return EDialogNodeType::Line;
+}
+
 FSlateIcon UDialogAssetGraphNode_Line::GetIconAndTint(FLinearColor& OutColor) const
 {
     static FSlateIcon Icon(FAppStyle::GetAppStyleSetName(), "Icons.Comment");
     return Icon;
 }
 
+FText UDialogAssetGraphNode_Line::GetNodeTitle(ENodeTitleType::Type titleType) const
+{
+    return FText::FromString(TEXT("Line"));
+}
+
 void UDialogAssetGraphNode_Line::ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const
 {
-    /*for(const UEdGraphPin* Pin : GetAllPins())
+    for(const UEdGraphPin* Pin : GetAllPins())
     {
         if(Pin->Direction != EEdGraphPinDirection::EGPD_Output) continue;
 
@@ -26,7 +36,20 @@ void UDialogAssetGraphNode_Line::ParseToRuntime(FDialogNode* RuntimeNode, const 
 
         if(!Pin->HasAnyConnections()) info.NextID = -1;
         else info.NextID = *GuidToIndex.Find(Pin->LinkedTo[0]->GetOwningNode()->NodeGuid);
-    }*/
+    }
 }
 
+bool UDialogAssetGraphNode_Line::CanUserAddCondition() const
+{
+    return true;
+}
 
+FText UDialogAssetGraphNode_Line::GetDialogLine() const
+{
+    return DialogLine;
+}
+
+void UDialogAssetGraphNode_Line::SetDialogLine(const FText& InDialogLine)
+{
+    DialogLine = InDialogLine;
+}

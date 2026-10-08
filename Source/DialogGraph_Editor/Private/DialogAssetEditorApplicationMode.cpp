@@ -34,6 +34,7 @@ FDialogAssetEditorApplicationMode::FDialogAssetEditorApplicationMode(TSharedPtr<
             )
         )
     );
+
 }
 
 void FDialogAssetEditorApplicationMode::RegisterTabFactories(TSharedPtr<FTabManager> InTabManager)

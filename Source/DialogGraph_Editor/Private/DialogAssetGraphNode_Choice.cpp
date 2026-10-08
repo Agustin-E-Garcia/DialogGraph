@@ -7,6 +7,11 @@ UDialogAssetGraphNode_Choice::UDialogAssetGraphNode_Choice(const FObjectInitiali
 {
 }
 
+EDialogNodeType UDialogAssetGraphNode_Choice::GetNodeType() const 
+{
+    return EDialogNodeType::Choice;
+}
+
 FSlateIcon UDialogAssetGraphNode_Choice::GetIconAndTint(FLinearColor& OutColor) const 
 {
     static FSlateIcon Icon(FAppStyle::GetAppStyleSetName(), "GraphEditor.Switch_16x");
@@ -16,4 +21,9 @@ FSlateIcon UDialogAssetGraphNode_Choice::GetIconAndTint(FLinearColor& OutColor) 
 FLinearColor UDialogAssetGraphNode_Choice::GetNodeTitleColor() const
 {
     return FLinearColor::Yellow;
+}
+
+FText UDialogAssetGraphNode_Choice::GetNodeTitle(ENodeTitleType::Type titleType) const
+{
+    return FText::FromString(TEXT("Choice"));
 }

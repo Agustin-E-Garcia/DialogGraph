@@ -7,6 +7,11 @@ UDialogAssetGraphNode_Root::UDialogAssetGraphNode_Root(const FObjectInitializer&
 {
 }
 
+EDialogNodeType UDialogAssetGraphNode_Root::GetNodeType() const
+{
+    return EDialogNodeType::Start;
+}
+
 void UDialogAssetGraphNode_Root::AllocateDefaultPins()
 {
     CreatePin(EGPD_Output, UDialogAssetEditorTypes::PinCategory_SingleNode, TEXT("Out"));
@@ -21,6 +26,11 @@ FSlateIcon UDialogAssetGraphNode_Root::GetIconAndTint(FLinearColor& OutColor) co
 {
     static FSlateIcon Icon(FAppStyle::GetAppStyleSetName(), "GraphEditor.Event_16x");
     return Icon;
+}
+
+FText UDialogAssetGraphNode_Root::GetNodeTitle(ENodeTitleType::Type titleType) const
+{
+    return FText::FromString(TEXT("On Dialog Start"));
 }
 
 bool UDialogAssetGraphNode_Root::CanUserDeleteNode() const { return false; }

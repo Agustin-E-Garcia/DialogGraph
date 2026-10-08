@@ -1,14 +1,17 @@
 #include "DialogAssetGraphNode_Task.h"
 #include "CoreGlobals.h"
 #include "EdGraph/EdGraphPin.h"
-#include "StructUtils/PropertyBag.h"
 #include "Textures/SlateIcon.h"
 #include "Styling/AppStyle.h"
 #include "UObject/ObjectMacros.h"
-#include "UObject/UnrealType.h"
 
 UDialogAssetGraphNode_Task::UDialogAssetGraphNode_Task(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+}
+
+EDialogNodeType UDialogAssetGraphNode_Task::GetNodeType() const 
+{
+    return EDialogNodeType::Task;
 }
 
 FLinearColor UDialogAssetGraphNode_Task::GetNodeTitleColor() const
@@ -20,6 +23,11 @@ FSlateIcon UDialogAssetGraphNode_Task::GetIconAndTint(FLinearColor& OutColor) co
 {
     static FSlateIcon Icon(FAppStyle::GetAppStyleSetName(), "ClassIcon.BlueprintFunctionLibrary");
     return Icon;
+}
+
+FText UDialogAssetGraphNode_Task::GetNodeTitle(ENodeTitleType::Type titleType) const
+{
+    return FText::FromName(TaskFunctionData.Name);
 }
 
 void UDialogAssetGraphNode_Task::ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const

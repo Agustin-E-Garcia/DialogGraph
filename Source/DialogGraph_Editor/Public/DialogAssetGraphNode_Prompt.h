@@ -10,14 +10,16 @@ class UDialogAssetGraphNode_Prompt : public UDialogAssetGraphNode
     GENERATED_UCLASS_BODY()
 
 public:
-    virtual EDialogNodeType GetNodeType() const override { return EDialogNodeType::Choice; }
+    //~ Begin UDialogAssetGraphNode interface
+    virtual EDialogNodeType GetNodeType() const override;
+    virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const override;
+    //~ End UDialogAssetGraphNode interface
 
-    //~ Begin UEdGraphNode Interface
+    //~ Begin UEdGraphNode interface
     virtual void AllocateDefaultPins() override;
     virtual FLinearColor GetNodeTitleColor() const override;
     virtual FSlateIcon GetIconAndTint(FLinearColor& OutColor) const override;
-    virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override { return FText::FromString(TEXT("Prompt")); }
-    //~ End UEdGraphNode Interface
+    virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override;
+    //~ End UEdGraphNode interface
 
-    virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const override;
 };

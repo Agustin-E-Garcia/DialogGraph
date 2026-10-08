@@ -1,11 +1,17 @@
 #include "DialogAssetGraphNode.h"
 #include "DialogAssetEditorTypes.h"
+#include "EdGraph/EdGraphNode.h"
 #include "EdGraph/EdGraphSchema.h"
 #include "SGraphNode.h"
 #include "EdGraphSchema_DialogAsset.h"
 
 UDialogAssetGraphNode::UDialogAssetGraphNode(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+}
+
+EDialogNodeType UDialogAssetGraphNode::GetNodeType() const
+{
+    return EDialogNodeType::DEFAULT;
 }
 
 void UDialogAssetGraphNode::AllocateDefaultPins()
@@ -46,6 +52,16 @@ void UDialogAssetGraphNode::AutowireNewNode(UEdGraphPin* FromPin)
     }
 }
 
+void UDialogAssetGraphNode::ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const
+{
+    // Empty in base class
+}
+
+bool UDialogAssetGraphNode::CanUserAddCondition() const
+{
+    return false;
+}
+
 void UDialogAssetGraphNode::AddCondition(TObjectPtr<UClass> InClass, FName InName)
 {
     FBindedFunctionData& Data = Conditions.AddDefaulted_GetRef();
@@ -53,8 +69,17 @@ void UDialogAssetGraphNode::AddCondition(TObjectPtr<UClass> InClass, FName InNam
     Data.Name = InName;
 
     InitializeBindedFunction(Data);
+}
 
-    if(VisualGraphNode) VisualGraphNode->UpdateGraphNode();
+const UEdGraphPin* UDialogAssetGraphNode::GetOutputPin() const
+{
+    for(UEdGraphPin* Pin : GetAllPins())
+    {
+        if(Pin->Direction == EEdGraphPinDirection::EGPD_Input) continue;
+        return Pin;
+    }
+
+    return nullptr;
 }
 
 void UDialogAssetGraphNode::InitializeBindedFunction(FBindedFunctionData& FunctionData)
@@ -74,4 +99,14 @@ void UDialogAssetGraphNode::InitializeBindedFunction(FBindedFunctionData& Functi
 
     const UPropertyBag* BagStruct = UPropertyBag::GetOrCreateFromDescs(PropertyBagDescriptions);
     FunctionData.Parameters.InitializeFromBagStruct(BagStruct);
+}
+
+TArray<FBindedFunctionData> UDialogAssetGraphNode::GetConditionsData() const 
+{ 
+    return Conditions; 
+}
+
+bool UDialogAssetGraphNode::HasConditions() const 
+{ 
+    return !Conditions.IsEmpty(); 
 }

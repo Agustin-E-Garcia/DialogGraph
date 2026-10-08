@@ -41,8 +41,10 @@ enum class EDialogNodeType : uint8
 {
     DEFAULT UMETA(Hidden),
     Start UMETA(Hidden),
+    Choice UMETA(Hidden),
     Line,
-    Choice,
+    Prompt,
+    Branch,
     Task,
 };
 

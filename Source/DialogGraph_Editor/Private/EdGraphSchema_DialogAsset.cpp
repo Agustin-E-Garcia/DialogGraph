@@ -1,5 +1,6 @@
 #include "EdGraphSchema_DialogAsset.h"
 #include "AssetTypeActions_Base.h"
+#include "Containers/AnsiString.h"
 #include "DialogAssetEditorTypes.h"
 #include "DialogAssetGraph.h"
 #include "DialogAssetGraphNode.h"
@@ -19,8 +20,6 @@
 #include "Internationalization/Text.h"
 #include "Modules/ModuleManager.h"
 #include "ScopedTransaction.h"
-#include "AIGraphTypes.h"
-#include "DialogGraph_Editor.h"
 #include "Templates/SharedPointer.h"
 #include "Templates/SubclassOf.h"
 #include "ToolMenuDelegates.h"
@@ -28,10 +27,6 @@
 #include "ToolMenuSection.h"
 #include "Types/SlateEnums.h"
 #include "Types/SlateVector2.h"
-#include "UObject/Linker.h"
-#include "UObject/ObjectMacros.h"
-#include "UObject/Script.h"
-#include "UObject/UObjectGlobals.h"
 #include "ToolMenu.h"
 #include "Framework/Commands/GenericCommands.h"
 #include "DialogAsset.h"
@@ -134,6 +129,12 @@ void FDialogSchemaAction_NewNode::AddReferencedObjects(FReferenceCollector& Coll
 UEdGraphNode* FDialogSchemaAction_AddCondition::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2f& Location, bool bSelectNewNode)
 {
     if(!FromPin) return nullptr;
+
+    FString name = FString::Printf(TEXT("Add Condition - %s"), *BindedFunctionName.ToString());
+
+    const FScopedTransaction Transaction(FText::FromString(name));
+    ParentGraph->Modify();
+    FromPin->GetOwningNode()->Modify();
 
     UDialogAssetGraphNode* DialogNode = Cast<UDialogAssetGraphNode>(FromPin->GetOwningNode());
     if(DialogNode) DialogNode->AddCondition(BindedFunctionClass, BindedFunctionName);
@@ -266,27 +267,31 @@ void UEdGraphSchema_DialogAsset::GetContextMenuActions(UToolMenu* Menu, UGraphNo
 {
     if(Context->Node)
     {
-        FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaNodeActions", FText::FromString("Node Actions"));
-        Section.AddMenuEntry(FGenericCommands::Get().Delete);
-        Section.AddMenuEntry(FGenericCommands::Get().Cut);
-        Section.AddMenuEntry(FGenericCommands::Get().Copy);
-        Section.AddMenuEntry(FGenericCommands::Get().Duplicate);
-    }
-
-    if(Context->Node)
-    {
-        const UDialogAssetGraphNode* Node = Cast<UDialogAssetGraphNode>(Context->Node);
-        if(Node && Node->CanUserAddCondition())
         {
-            FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaConditions", FText::FromString("Dialog Conditions"));
-            Context->Pin = Context->Node->Pins[0];
+            FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaNodeActions", FText::FromString("Node Actions"));
+            Section.AddMenuEntry(FGenericCommands::Get().Delete);
+            Section.AddMenuEntry(FGenericCommands::Get().Cut);
+            Section.AddMenuEntry(FGenericCommands::Get().Copy);
+            Section.AddMenuEntry(FGenericCommands::Get().Duplicate);
+        }
 
-            // Add the condition action submenu with all the conditions into it
-            Section.AddSubMenu(
-                    "AddCondition",
-                    FText::FromString("Add Condition..."),
-                    FText::FromString("Adds new condition to the node"),
-                    FNewToolMenuDelegate::CreateUObject(this, &UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu, Context));
+        {
+            const UDialogAssetGraphNode* Node = Cast<UDialogAssetGraphNode>(Context->Node);
+            if(Node && Node->CanUserAddCondition())
+            {
+                FToolMenuSection& Section = Menu->AddSection("DialogAssetGraphSchemaConditions", FText::FromString("Dialog Conditions"));
+                Context->Pin = Context->Node->Pins[0];
+
+                // Add a clear all conditions action
+                // Add a remove condition action
+
+                // Add the condition action submenu with all the conditions into it
+                Section.AddSubMenu(
+                        "AddCondition",
+                        FText::FromString("Add Condition..."),
+                        FText::FromString("Adds new condition to the node"),
+                        FNewToolMenuDelegate::CreateUObject(this, &UEdGraphSchema_DialogAsset::CreateAddConditionSubMenu, Context));
+            }
         }
     }
 
@@ -369,23 +374,16 @@ void UEdGraphSchema_DialogAsset::OnActionSelected(const TArray<TSharedPtr<FEdGra
 
 TSharedPtr<FDialogSchemaAction_NewNode> UEdGraphSchema_DialogAsset::AddNewNodeAction(FGraphActionListBuilderBase& ContextMenuBuilder, const UClass* Class, const FText& InCategory, const FText& InMenuDesc, const FText& InTooltip)
 {
+    UDialogAssetGraphNode* TemplateNode = NewObject<UDialogAssetGraphNode>(ContextMenuBuilder.OwnerOfTemporaries, Class);
+
     FText Category = InCategory.IsEmpty() ? FObjectEditorUtils::GetCategoryText(Class) : InCategory;
-    FText MenuDesc = InMenuDesc.IsEmpty() ? FText::FromString(FName::NameToDisplayString(Class->GetMetaData(TEXT("DisplayName")), false)) : InMenuDesc;
+    FText MenuDesc = InMenuDesc.IsEmpty() ? TemplateNode->GetNodeTitle(ENodeTitleType::MenuTitle) : InMenuDesc;
     FText Tooltip = InTooltip.IsEmpty() ? Class->GetToolTipText() : InTooltip;
 
     TSharedPtr<FDialogSchemaAction_NewNode> NewAction = TSharedPtr<FDialogSchemaAction_NewNode>(new FDialogSchemaAction_NewNode(Category, MenuDesc, Tooltip, 0));
     ContextMenuBuilder.AddAction(NewAction);
-    
-    UDialogAssetGraphNode* TemplateNode = NewObject<UDialogAssetGraphNode>(ContextMenuBuilder.OwnerOfTemporaries, Class);
+
     NewAction->NodeTemplate = TemplateNode;
 
     return NewAction;
-}
-
-FGraphNodeClassHelper& UEdGraphSchema_DialogAsset::GetClassCache() const
-{
-    const FDialogGraph_EditorModule& EditorModule = FModuleManager::GetModuleChecked<FDialogGraph_EditorModule>("DialogGraph_Editor");
-    FGraphNodeClassHelper* ClassHelper = EditorModule.GetClassCache().Get();
-    check(ClassHelper);
-    return *ClassHelper;
 }

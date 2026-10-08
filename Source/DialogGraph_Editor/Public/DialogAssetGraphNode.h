@@ -13,31 +13,30 @@ class UDialogAssetGraphNode : public UEdGraphNode
     GENERATED_UCLASS_BODY()
 
 public:
-    virtual EDialogNodeType GetNodeType() const { return EDialogNodeType::DEFAULT; }
+    virtual EDialogNodeType GetNodeType() const;
+    virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const;
+    virtual bool CanUserAddCondition() const;
 
-    //~ Begin UEdGraphNode Interface
+    //~ Begin UEdGraphNode interface
     virtual void AllocateDefaultPins() override;
     virtual FLinearColor GetNodeTitleColor() const override;
     virtual bool ShowPaletteIconOnNode() const override;
     virtual void GetNodeContextMenuActions(class UToolMenu* Menu, class UGraphNodeContextMenuContext* Context) const override;
     virtual bool CanUserDeleteNode() const override;
-	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
-    //~ End UEdGraphNode Interface
-
-    virtual void ParseToRuntime(FDialogNode* RuntimeNode, const TMap<FGuid, int>& GuidToIndex) const {}
-    virtual bool CanUserAddCondition() const { return false; }
+    virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
+    //~ End UEdGraphNode interface
 
     void AddCondition(TObjectPtr<UClass> InClass, FName InName);
+    TArray<FBindedFunctionData> GetConditionsData() const;
 
-    bool HasConditions() const { return !Conditions.IsEmpty(); }
-    void SetVisualGraphNode(SGraphNode* GraphNode) { VisualGraphNode = GraphNode; }
+    bool HasConditions() const;
+    const UEdGraphPin* GetOutputPin() const;
 
 
 protected:
-    SGraphNode* VisualGraphNode = nullptr;
-    void InitializeBindedFunction(FBindedFunctionData& FunctionData);
-
-private:
     UPROPERTY(EditAnywhere)
     TArray<FBindedFunctionData> Conditions;
+
+    void InitializeBindedFunction(FBindedFunctionData& FunctionData);
+
 };

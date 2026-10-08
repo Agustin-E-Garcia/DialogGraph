@@ -11,22 +11,17 @@ class FDialogGraph_EditorModule : public IModuleInterface, public IHasMenuExtens
 {
 public:
 
-    /** IModuleInterface implementation */
+    //~ Begin IModuleInterface interface
     virtual void StartupModule() override;
     virtual void ShutdownModule() override;
+    //~ End IModuleInterface interface
 
-    virtual TSharedPtr<FExtensibilityManager> GetMenuExtensibilityManager() override { return MenuExtensibilityManager; }
-    virtual TSharedPtr<FExtensibilityManager> GetToolBarExtensibilityManager() override { return ToolBarExtensibilityManager; }
-
-    TSharedPtr<FGraphNodeClassHelper> GetClassCache() const { return ClassCache; }
+    virtual TSharedPtr<FExtensibilityManager> GetMenuExtensibilityManager() override;
+    virtual TSharedPtr<FExtensibilityManager> GetToolBarExtensibilityManager() override;
 
     static const FName DialogAssetEditorAppIdentifier;
 
 private:
     TSharedPtr<FExtensibilityManager> MenuExtensibilityManager;
     TSharedPtr<FExtensibilityManager> ToolBarExtensibilityManager;
-
-    TSharedPtr<FGraphNodeClassHelper> ClassCache;
-
-    TSharedPtr<DialogStyleSet> _styleSet = nullptr;
 };

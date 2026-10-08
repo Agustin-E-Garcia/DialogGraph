@@ -1,5 +1,4 @@
 #include "DialogAssetGraph.h"
-#include "DialogAssetGraphNode_Line.h"
 #include "DialogNode.h"
 #include "EdGraphSchema_DialogAsset.h"
 #include "DialogAssetGraphNode_Root.h"
@@ -50,6 +49,7 @@ void UDialogAssetGraph::UpdateAsset()
     {
         if(nodes[i]->GetNodeType() == EDialogNodeType::DEFAULT) continue;
         if(nodes[i]->GetNodeType() == EDialogNodeType::Start) continue;
+        if(nodes[i]->GetNodeType() == EDialogNodeType::Choice) continue;
 
         FDialogNode* runtimeNode = DialogAsset->CreateNewNode();
         GuidToIndex.Emplace(nodes[i]->NodeGuid, runtimeNode->ID);
@@ -71,6 +71,7 @@ void UDialogAssetGraph::UpdateAsset()
 
             continue;
         }
+        if(graphNode->GetNodeType() == EDialogNodeType::Choice) continue;
 
         FDialogNode* runtimeNode = DialogAsset->GetNode(GuidToIndex[graphNode->NodeGuid]);
         runtimeNode->NextIDs.Reserve(graphNode->GetAllPins().Num() - 1);

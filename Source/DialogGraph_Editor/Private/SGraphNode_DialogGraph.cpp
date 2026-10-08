@@ -1,10 +1,7 @@
 #include "SGraphNode_DialogGraph.h"
 #include "DialogAssetGraphNode.h"
-#include "DialogAssetGraphNode_Choice.h"
 #include "DialogAssetGraphNode_Line.h"
 #include "EdGraph/EdGraphNode.h"
-#include "Layout/Margin.h"
-#include "Layout/Visibility.h"
 #include "Math/Color.h"
 #include "SGraphNode.h"
 #include "SGraphPin.h"
@@ -12,14 +9,12 @@
 #include "Styling/AppStyle.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateTypes.h"
-#include "Textures/SlateIcon.h"
 #include "Types/SlateEnums.h"
 #include "Widgets/DeclarativeSyntaxSupport.h"
 #include "Widgets/Input/SMultiLineEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
 #include "ScopedTransaction.h"
-#include "EdGraph/EdGraph.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/SNullWidget.h"
 #include "Widgets/SOverlay.h"
@@ -28,10 +23,6 @@
 void SGraphNode_DialogGraph::Construct(const FArguments& InArgs, UEdGraphNode* inNode)
 {
     GraphNode = inNode;
-
-    UDialogAssetGraphNode* DialogNode = Cast<UDialogAssetGraphNode>(inNode);
-    if(DialogNode) DialogNode->SetVisualGraphNode(this);
-
     UpdateGraphNode();
 }
 
@@ -81,7 +72,7 @@ void SGraphNode_DialogGraph::UpdateGraphNode()
                         SNew(SBox)
                         .HAlign(HAlign_Fill)
                         .VAlign(VAlign_Fill)
-                        .MinDesiredWidth(70.0f)
+                        .WidthOverride(220)
                         [
                             SNew(SVerticalBox)
                             +SVerticalBox::Slot()
@@ -111,11 +102,11 @@ void SGraphNode_DialogGraph::UpdateGraphNode()
                                 .HAlign(HAlign_Left)
                                 .VAlign(VAlign_Fill)
                                 .AutoWidth()
-                                //[
-                                //    SNew(STextBlock)
-                                //    .Text(FText::FromString("narrator"))
-                                //    .ColorAndOpacity(FLinearColor::White.Desaturate(0.5f))
-                                //]
+                                [
+                                    SNew(STextBlock)
+                                    .Text(FText::FromString("narrator"))
+                                    .ColorAndOpacity(FLinearColor::White.Desaturate(0.5f))
+                                ]
                             ]
                             +SVerticalBox::Slot()
                             .AutoHeight()
@@ -172,9 +163,8 @@ TSharedRef<SWidget> SGraphNode_DialogGraph::CreateNodeContentArea()
             .SelectAllTextWhenFocused(true)
             .OnTextCommitted(this, &SGraphNode_DialogGraph::OnTextCommited)
             .ForegroundColor(FSlateColor::UseForeground())
-            .AutoWrapText(true)
-            .WrapTextAt(300.0f)
-            .ModiferKeyForNewLine(EModifierKey::Shift);
+            .OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+            .AutoWrapText(false);
 }
 
 void SGraphNode_DialogGraph::OnTextCommited(const FText& InText, ETextCommit::Type Type)

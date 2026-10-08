@@ -1,22 +1,16 @@
 Polish:
-    1 - Fix undo/redo for every action we have available
-        - Add Condition: Undo never triggers
-    4 - Add custom tooltips to all graph nodes
-    5 - Create a custom details panel for the conditions, so we can add / remove / edit conditions
+    1 - Add custom tooltips to all graph nodes
+    2 - Create a custom details panel for the conditions, so we can add / remove / edit conditions
+    3 - Add a Toolbar button to show the class details instead of showing them when no node is selected
+    4 - Add a Toolbar button to create a new DialogFunctionLibrary that can be used to import functions to the dialog graph
 
 ToDo:
-    2 - Add RemoveConditions menu to nodes
-    3 - Add a context-menu option to mark a task node as editor-only (these don't get saved to the runtime asset)
-    4 - Add another panel with a text parser to create the flow quickly
-        - each line is a new node
-        - a line with no specific marker is a Line node
-        - a line starting with "*" is a Choice node
-        - a line starting with "+" is an option of the last available Choice node
-        - when editing a line, add a dotted selection-like highlight to the node linked to that line
-    5 - Add Blackboard functionality from BehaviourTrees into Dialog Graph
+    1 - Add RemoveConditions menu to nodes
+    2 - Add Blackboard functionality from BehaviourTrees into Dialog Graph
         - Maybe instead of blackboard we can add a Data Table for character data
-            - If so, we can try to add some autocomplete for the text parser
-    6 - Add a selector to each line node allowing to add a sound asset for the voice over
+    3 - Add a selector to each line node allowing to add a sound asset for the voice over
         - Add a tick option next to the selector to mark if the asset is placeholder (start as true)
             - Implement another tool that goes over all the Dialog assets in the project and tallies all the sound assets that are marked as placeholders (double click opens the dialog asset in question and selects the corresponding node)
-    7 - Add a new editor mode for editing a level sequence that will play along with the dialog, allowing for camera changes and loading models/textures to execute the animations on.
+    4 - Add another panel with a text parser to create the flow quickly
+        - Maybe we could make a tool to import dialogs from Inky (or other tools) and translate them to graph nodes
+    6 - Add a new editor mode for editing a level sequence that will play along with the dialog, allowing for camera changes and loading models/textures to execute the animations on.

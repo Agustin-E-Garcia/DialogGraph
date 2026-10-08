@@ -13,16 +13,17 @@ class DIALOGGRAPH_API UDialogAsset : public UDataAsset
 
 public:
     FDialogNode* CreateNewNode();
+    void SetStartNodeID(int index);
+
     FDialogNode* GetNode(int ID);
     const FDialogNode* GetNode(int ID) const;
+    int GetStartNodeID() const;
+    int GetNodeCount() const;
+
     FDialogNode* GetOrAddNode(int ID);
+
+    bool IsEmpty() const;
     void Clear();
-
-    int GetStartNodeID() const { return StartNodeID; }
-    void SetStartNodeID(int index) { StartNodeID = index; }
-
-    int GetNodeCount() const { return DialogNodes.Num(); }
-    bool IsEmpty() const { return DialogNodes.IsEmpty(); }
 
     UPROPERTY(EditAnywhere)
     TArray<TSubclassOf<UDialogGraphFunctionLibrary>> RegisteredLibraries;

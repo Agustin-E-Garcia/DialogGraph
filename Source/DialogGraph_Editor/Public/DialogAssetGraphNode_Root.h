@@ -10,13 +10,15 @@ class UDialogAssetGraphNode_Root : public UDialogAssetGraphNode
     GENERATED_UCLASS_BODY()
 
 public:
-    virtual EDialogNodeType GetNodeType() const override { return EDialogNodeType::Start; }
+    //~ Begin UDialogAssetGraphNode interface
+    virtual EDialogNodeType GetNodeType() const override;
+    //~ End UDialogAssetGraphNode interface
 
     //~ Begin UEdGraphNode interface
     virtual void AllocateDefaultPins() override;
     virtual FLinearColor GetNodeTitleColor() const override;
     virtual FSlateIcon GetIconAndTint(FLinearColor& OutColor) const override;
-    virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override { return FText::FromString(TEXT("On Dialog Start")); }
+    virtual FText GetNodeTitle(ENodeTitleType::Type titleType) const override;
     virtual bool CanUserDeleteNode() const override;
     virtual bool CanDuplicateNode() const override;
     //~ End UEdGraphNode interface
